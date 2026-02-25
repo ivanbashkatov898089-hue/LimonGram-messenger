@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Limongram 🍋</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        
+        h1 {
+            color: #128C7E;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .connect-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        input {
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 300px;
+            margin-right: 10px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #128C7E;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .chat-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #25D366;
+        }
+        
+        .users-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .user-badge {
+            background: #e4e6eb;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .user-badge:hover {
+            background: #d1d3d8;
+        }
+        
+        .user-badge.active {
+            background: #25D366;
+            color: white;
+        }
+        
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+        
+        .incoming {
+            background: white;
+            border: 1px solid #ddd;
+        }
+        
+        .outgoing {
+            background: #dcf8c6;
+            margin-left: auto;
+        }
+        
+        .message-sender {
+            font-weight: bold;
+            color: #128C7E;
+            margin-bottom: 5px;
+        }
+        
+        .message-content {
+            word-wrap: break-word;
+        }
+        
+        .input-panel {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #messageInput {
+            flex: 1;
+        }
+        
+        #status {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🍋 Limongram Messenger</h1>
+    
+    <div class="connect-panel" id="connectPanel">
+        <h2>Добро пожаловать!</h2>
+        <p>Введите ваше имя для подключения к чату</p>
+        <input type="text" id="username" placeholder="Ваше имя" maxlength="20">
+        <button onclick="connect()">Подключиться</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <h2 id="chatTitle">Чат</h2>
+            <div id="onlineStatus">🟢 Онлайн</div>
+        </div>
+        
+        <div class="users-panel" id="usersPanel">
+            <strong>Собеседники:</strong>
+            <div id="userList"></div>
+        </div>
+        
+        <div id="messages">
+            <div style="text-align: center; color: #666; padding: 50px;">
+                Выберите собеседника из списка выше
+            </div>
+        </div>
+        
+        <div class="input-panel">
+            <input type="text" id="messageInput" placeholder="Введите сообщение..." disabled>
+            <button onclick="sendMessage()" id="sendButton" disabled>Отправить</button>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let ws = null;
+        let currentUser = null;
+        let currentChat = null;
+        let onlineUsers = [];
+        
+        // Функция подключения к серверу
+        function connect() {
+            const username = document.getElementById('username').value.trim();
+            
+            if (!username) {
+                showStatus('Введите имя пользователя!', 'error');
+                return;
+            }
+            
+            if (username.length < 2) {
+                showStatus('Имя должно быть минимум 2 символа', 'error');
+                return;
+            }
+            
+            currentUser = username;
+            showStatus('Подключаемся к серверу...', '');
+            
+            // Создаем WebSocket соединение
+            ws = new WebSocket(`wss://limongram.glitch.me/ws/${username}`);
+            
+            // Обработка открытия соединения
+            ws.onopen = function() {
+                console.log('✅ WebSocket подключен');
+                showStatus('✅ Подключено как ' + username, 'connected');
+                
+                // Показываем чат, скрываем панель подключения
+                document.getElementById('connectPanel').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'block';
+                document.getElementById('chatTitle').textContent = `Чат (${username})`;
+                
+                // Активируем поле ввода сообщений
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendButton').disabled = false;
+                
+                // Запрашиваем список пользователей у сервера
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: "get_users" }));
+                        console.log("Отправил запрос на список пользователей");
+                    }
+                }, 500);
+            };
+            
+            // Обработка входящих сообщений
+            ws.onmessage = function(event) {
+                console.log('📨 Получено сообщение:', event.data);
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'message') {
+                        // Добавляем сообщение в чат
+                        addMessage(data.from, data.message, true);
+                        
+                        // Добавляем отправителя в список пользователей
+                        addUserToList(data.from);
+                    }
+                    else if (data.type === 'user_list') {
+                        // Получен список пользователей от сервера
+                        console.log("Получен список пользователей:", data.users);
+                        updateUserList(data.users);
+                    }
+                    else if (data.type === 'system') {
+                        // Системное сообщение
+                        console.log("Системное сообщение:", data.message);
+                        if (data.users) {
+                            updateUserList(data.users);
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Ошибка обработки сообщения:', error);
+                }
+            };
+            
+            // Обработка ошибок
+            ws.onerror = function(error) {
+                console.error('❌ WebSocket ошибка:', error);
+                showStatus('❌ Ошибка подключения к серверу', 'error');
+            };
+            
+            // Обработка закрытия соединения
+            ws.onclose = function() {
+                console.log('🔌 WebSocket отключен');
+                showStatus('❌ Соединение потеряно', 'error');
+            };
+        }
+        
+        // Функция отправки сообщения
+        function sendMessage() {
+            if (!currentChat) {
+                showStatus('Выберите собеседника из списка!', 'error');
+                return;
+            }
+            
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                showStatus('Введите сообщение!', 'error');
+                return;
+            }
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showStatus('Нет подключения к серверу', 'error');
+                return;
+            }
+            
+            // Отправляем сообщение на сервер
+            ws.send(JSON.stringify({
+                to: currentChat,
+                message: message
+            }));
+            
+            // Показываем свое сообщение в чате
+            addMessage('Вы', message, false);
+            
+            // Очищаем поле ввода
+            messageInput.value = '';
+            messageInput.focus();
+        }
+        
+        // Функция добавления пользователя в список (по одному)
+        function addUserToList(username) {
+            if (username === currentUser) return; // Не добавляем себя
+            
+            const userList = document.getElementById('userList');
+            const existingUsers = Array.from(userList.querySelectorAll('.user-badge'))
+                .map(badge => badge.getAttribute('data-user'));
+            
+            if (!existingUsers.includes(username)) {
+                const userBadge = document.createElement('div');
+                userBadge.className = 'user-badge';
+                userBadge.setAttribute('data-user', username);
+                userBadge.textContent = username;
+                userBadge.onclick = function() {
+                    selectChat(username);
+                };
+                
+                userList.appendChild(userBadge);
+            }
+        }
+        
+        // Функция обновления списка пользователей (полностью заменить список)
+        function updateUserList(users) {
+            console.log("Обновляю список пользователей:", users);
+            
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+            
+            // Фильтруем себя из списка
+            const otherUsers = users.filter(user => user !== currentUser);
+            
+            if (otherUsers.length === 0) {
+                userList.innerHTML = '<div style="color: #999; padding: 10px; font-style: italic;">Нет других пользователей онлайн</div>';
+                return;
+            }
+            
+            // Добавляем каждого пользователя
+            otherUsers.forEach(username => {
+                const userBadge = document.createElement('div');
+                userBadge.className = 'user-badge';
+                userBadge.setAttribute('data-user', username);
+                userBadge.textContent = username;
+                userBadge.onclick = function() {
+                    selectChat(username);
+                };
+                userList.appendChild(userBadge);
+            });
+        }
+        
+        // Функция выбора чата
+        function selectChat(username) {
+            currentChat = username;
+            
+            // Подсвечиваем выбранного пользователя
+            document.querySelectorAll('.user-badge').forEach(badge => {
+                if (badge.getAttribute('data-user') === username) {
+                    badge.classList.add('active');
+                } else {
+                    badge.classList.remove('active');
+                }
+            });
+            
+            // Показываем заголовок чата
+            document.getElementById('chatTitle').textContent = `Чат с ${username}`;
+            
+            // Очищаем сообщения
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = `<div style="text-align: center; color: #666; padding: 30px;">
+                Начните общение с ${username}
+            </div>`;
+        }
+        
+        // Функция добавления сообщения в чат
+        function addMessage(sender, text, incoming) {
+            const messagesDiv = document.getElementById('messages');
+            
+            // Если это первый раз открываем чат
+            if (messagesDiv.children.length === 1 && 
+                messagesDiv.children[0].style.textAlign === 'center') {
+                messagesDiv.innerHTML = '';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${incoming ? 'incoming' : 'outgoing'}`;
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-sender">${incoming ? sender : 'Вы'}</div>
+                <div class="message-content">${text}</div>
+                <div style="font-size: 12px; color: #999; text-align: right; margin-top: 5px;">
+                    ${time}
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Функция показа статуса
+        function showStatus(text, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = text;
+            statusDiv.className = type;
+            statusDiv.style.display = 'block';
+            
+            // Автоматически скрываем через 5 секунд
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Разрешаем отправку по Enter
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Фокус на поле ввода имени при загрузке
+        document.getElementById('username').focus();
+        
+        console.log('Limongram Messenger загружен');
+    </script>
+</body>
+</html>
