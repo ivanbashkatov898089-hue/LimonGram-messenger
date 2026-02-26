@@ -1,3 +1,1 @@
 # LimonGram-messenger
-
-прекрасный мессенджер
