@@ -1,4 +1,3 @@
-cat > server_fixed.py << 'EOF'
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -24,11 +23,7 @@ class ChatServer:
         await websocket.accept()
         self.active_connections[username] = websocket
         print(f"✅ {username} подключился")
-        
-        # Отправляем новому пользователю список всех
         await self.send_user_list(username)
-        
-        # Отправляем всем остальным, что новый пользователь подключился
         await self.broadcast_new_user(username)
     
     async def disconnect(self, username: str):
@@ -40,7 +35,6 @@ class ChatServer:
             await self.broadcast_user_list()
     
     async def broadcast_user_list(self):
-        """Отправляем список ВСЕМ пользователям"""
         users = list(self.active_connections.keys())
         for connection in self.active_connections.values():
             try:
@@ -52,7 +46,6 @@ class ChatServer:
                 pass
     
     async def send_user_list(self, to_username: str):
-        """Отправляем список конкретному пользователю"""
         if to_username in self.active_connections:
             users = list(self.active_connections.keys())
             await self.active_connections[to_username].send_json({
@@ -61,7 +54,6 @@ class ChatServer:
             })
     
     async def broadcast_new_user(self, new_user: str):
-        """Оповещаем всех о новом пользователе"""
         users = list(self.active_connections.keys())
         for username, connection in self.active_connections.items():
             if username != new_user:
@@ -74,7 +66,6 @@ class ChatServer:
                     pass
     
     async def broadcast_key(self, from_user: str, key: str):
-        """Отправляем ключ ВСЕМ пользователям"""
         print(f"🔑 Рассылаю ключ от {from_user} всем")
         for username, connection in self.active_connections.items():
             if username != from_user:
@@ -84,12 +75,10 @@ class ChatServer:
                         "from": from_user,
                         "key": key
                     })
-                    print(f"   → отправлено {username}")
                 except Exception as e:
-                    print(f"   ❌ ошибка отправки {username}: {e}")
+                    print(f"❌ ошибка отправки {username}: {e}")
     
     async def forward_encrypted(self, from_user: str, to_user: str, data: dict):
-        """Пересылаем зашифрованное сообщение"""
         if to_user in self.active_connections:
             await self.active_connections[to_user].send_json({
                 "type": "encrypted",
@@ -110,9 +99,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
             print(f"📥 Получено от {username}: {data.get('type', 'unknown')}")
             
             if data.get("type") == "key_exchange":
-                # Сохраняем ключ
                 chat.user_keys[username] = data.get("key", "")
-                # Рассылаем ключ всем
                 await chat.broadcast_key(username, data.get("key", ""))
             
             elif data.get("type") == "encrypted":
@@ -131,7 +118,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
 @app.get("/")
 def home():
     return {
-        "message": "Limongram Server",
+        "message": "Limongram Server Fixed",
         "online": len(chat.active_connections),
         "users": list(chat.active_connections.keys())
     }
@@ -148,7 +135,3 @@ if __name__ == "__main__":
     print("✅ Автоматическое обновление списков")
     print("="*60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
-EOF
-
-# Перезапустим сервер
-echo "Сервер обновлен! Перезапустите его вручную на Render.com"
