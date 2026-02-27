@@ -225,6 +225,7 @@ chat = ChatServer()
 @app.post("/register")
 async def register(username: str, password: str):
     """Регистрация нового пользователя"""
+    print(f"📝 Попытка регистрации: {username}")
     
     # Проверяем длину
     if len(username) < 3:
@@ -239,6 +240,7 @@ async def register(username: str, password: str):
     # Создаем пользователя
     user = User(username, password)
     users_collection.insert_one(user.to_dict())
+    print(f"✅ Пользователь {username} зарегистрирован")
     
     # Создаем токен
     access_token = create_access_token({"sub": username})
@@ -358,3 +360,4 @@ if __name__ == "__main__":
     print("✅ Сообщения сохраняются")
     print("="*60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
