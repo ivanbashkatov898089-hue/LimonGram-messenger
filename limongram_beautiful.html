@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Limongram — защищенный мессенджер</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LimonGram — защищенный мессенджер</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -34,16 +34,16 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
         }
 
         /* Главный контейнер */
         .app {
-            width: 1300px;
-            max-width: 100%;
-            height: 90vh;
+            width: 100%;
+            max-width: 1300px;
+            height: 100vh;
             background: white;
-            border-radius: 30px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
             display: flex;
@@ -53,7 +53,7 @@
         /* Верхняя панель */
         .top-bar {
             background: var(--primary);
-            padding: 15px 25px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -63,32 +63,31 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
 
         .logo i {
-            font-size: 28px;
-            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+            font-size: 24px;
         }
 
         .logo h1 {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 600;
         }
 
         .online-status {
             background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 30px;
-            font-size: 14px;
+            font-size: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .online-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background: #4ade80;
             border-radius: 50%;
             animation: pulse 2s infinite;
@@ -107,43 +106,44 @@
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 40px;
+            padding: 20px;
         }
 
         .auth-card {
             background: white;
-            padding: 50px;
-            border-radius: 30px;
+            padding: 30px 20px;
+            border-radius: 20px;
             box-shadow: var(--shadow);
             text-align: center;
-            max-width: 450px;
+            max-width: 400px;
             width: 100%;
         }
 
         .auth-card i {
-            font-size: 60px;
+            font-size: 50px;
             color: var(--primary);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .auth-card h2 {
-            font-size: 28px;
+            font-size: 24px;
             color: var(--text);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .auth-card p {
             color: var(--text-light);
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            font-size: 14px;
         }
 
         .auth-input {
             width: 100%;
-            padding: 16px 20px;
+            padding: 14px 16px;
             font-size: 16px;
             border: 2px solid var(--border);
-            border-radius: 15px;
-            margin-bottom: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
             transition: all 0.3s;
         }
 
@@ -155,19 +155,19 @@
 
         .auth-btn {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             font-size: 16px;
             font-weight: 600;
             color: white;
             background: var(--primary);
             border: none;
-            border-radius: 15px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .auth-btn:hover {
@@ -181,68 +181,89 @@
             flex: 1;
             display: flex;
             background: var(--bg);
+            position: relative;
         }
 
         /* Боковая панель с чатами */
         .sidebar {
-            width: 350px;
+            width: 100%;
+            max-width: 350px;
             background: var(--sidebar);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 10;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        @media (min-width: 768px) {
+            .sidebar {
+                position: relative;
+                transform: translateX(0);
+            }
         }
 
         .sidebar-header {
-            padding: 20px;
+            padding: 16px;
             border-bottom: 1px solid var(--border);
         }
 
         .user-profile {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
         .avatar {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
         }
 
         .user-info h4 {
-            font-size: 16px;
+            font-size: 15px;
             color: var(--text);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .user-info p {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-light);
         }
 
         .search-box {
-            margin-top: 20px;
+            margin-top: 15px;
             position: relative;
         }
 
         .search-box i {
             position: absolute;
-            left: 15px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-light);
+            font-size: 14px;
         }
 
         .search-box input {
             width: 100%;
-            padding: 12px 15px 12px 45px;
+            padding: 10px 12px 10px 40px;
             border: 1px solid var(--border);
             border-radius: 25px;
             font-size: 14px;
@@ -259,19 +280,18 @@
         .chat-list {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 12px;
         }
 
         .chat-item {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 5px;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin-bottom: 4px;
             cursor: pointer;
             transition: all 0.2s;
-            position: relative;
         }
 
         .chat-item:hover {
@@ -284,8 +304,8 @@
         }
 
         .chat-avatar {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex;
@@ -293,8 +313,9 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 18px;
+            font-size: 16px;
             position: relative;
+            flex-shrink: 0;
         }
 
         .chat-avatar.online::after {
@@ -302,8 +323,8 @@
             position: absolute;
             bottom: 2px;
             right: 2px;
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             background: #4ade80;
             border-radius: 50%;
             border: 2px solid white;
@@ -311,6 +332,7 @@
 
         .chat-info {
             flex: 1;
+            min-width: 0;
         }
 
         .chat-name {
@@ -319,35 +341,27 @@
             margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            font-size: 14px;
         }
 
         .chat-name i {
             color: var(--primary);
-            font-size: 12px;
+            font-size: 10px;
         }
 
         .chat-preview {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-light);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 180px;
         }
 
         .chat-time {
-            font-size: 11px;
-            color: var(--text-light);
-        }
-
-        .key-status {
             font-size: 10px;
-            padding: 2px 6px;
-            background: var(--primary);
-            color: white;
-            border-radius: 10px;
-            margin-left: 5px;
+            color: var(--text-light);
+            flex-shrink: 0;
         }
 
         /* Основная область чата */
@@ -356,10 +370,11 @@
             display: flex;
             flex-direction: column;
             background: var(--bg);
+            width: 100%;
         }
 
         .chat-header {
-            padding: 20px 30px;
+            padding: 12px 16px;
             background: white;
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -367,48 +382,86 @@
             justify-content: space-between;
         }
 
+        .menu-toggle {
+            display: block;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--hover);
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .menu-toggle {
+                display: none;
+            }
+        }
+
         .chat-header-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
         }
 
         .chat-header-avatar {
-            width: 45px;
-            height: 45px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .chat-header-text {
+            min-width: 0;
         }
 
         .chat-header-text h3 {
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .chat-header-text p {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .chat-actions {
             display: flex;
-            gap: 15px;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .action-btn {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             border: none;
             background: var(--hover);
             color: var(--text);
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
         }
 
         .action-btn:hover {
@@ -420,20 +473,27 @@
         /* Область сообщений */
         .messages-container {
             flex: 1;
-            padding: 30px;
+            padding: 16px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMjAgMjBhMTAgMTAgMCAwIDEgMjAgMCAxMCAxMCAwIDAgMS0yMCAweiIgZmlsbD0icmdiYSgwLDAsMCwwLjAyKSIvPjwvc3ZnPg==');
         }
 
         .message {
-            max-width: 60%;
-            padding: 12px 16px;
+            max-width: 85%;
+            padding: 10px 14px;
             border-radius: 18px;
             position: relative;
             animation: messageAppear 0.3s ease;
+            word-wrap: break-word;
+        }
+
+        @media (min-width: 768px) {
+            .message {
+                max-width: 60%;
+            }
         }
 
         @keyframes messageAppear {
@@ -461,88 +521,60 @@
 
         .message-sender {
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--primary);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .message-text {
             font-size: 14px;
             line-height: 1.4;
             color: var(--text);
-            word-wrap: break-word;
         }
 
         .message-meta {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             margin-top: 4px;
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-light);
-        }
-
-        .message-meta i {
-            font-size: 12px;
-        }
-
-        .message.outgoing .message-meta {
             justify-content: flex-end;
         }
 
         /* Панель ввода */
         .input-area {
-            padding: 20px 30px;
+            padding: 12px 16px;
             background: white;
             border-top: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 8px;
         }
 
         .input-wrapper {
             flex: 1;
             background: var(--hover);
             border-radius: 25px;
-            padding: 5px 20px;
+            padding: 4px 12px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .input-wrapper input {
             flex: 1;
             background: transparent;
             border: none;
-            padding: 12px 0;
-            font-size: 15px;
+            padding: 8px 0;
+            font-size: 14px;
             outline: none;
-        }
-
-        .input-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .input-actions button {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: none;
-            background: transparent;
-            color: var(--text-light);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .input-actions button:hover {
-            background: var(--hover);
-            color: var(--primary);
+            min-width: 0;
         }
 
         .send-btn {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             border: none;
             background: var(--primary);
@@ -550,6 +582,11 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
         .send-btn:hover {
@@ -563,22 +600,151 @@
             box-shadow: none;
         }
 
+        /* Окно видеозвонка */
+        #callContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: none;
+        }
+
+        #callContainer > div {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #localVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .local-video-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            height: 160px;
+            border: 2px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #1a1a1a;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 768px) {
+            .local-video-container {
+                width: 150px;
+                height: 200px;
+            }
+        }
+
+        .call-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10001;
+        }
+
+        .call-btn {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        @media (min-width: 768px) {
+            .call-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+        }
+
+        .call-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .call-btn.mute {
+            background: #4CAF50;
+        }
+
+        .call-btn.video {
+            background: #2196F3;
+        }
+
+        .call-btn.end {
+            background: #f44336;
+        }
+
+        .call-info {
+            position: absolute;
+            top: 30px;
+            left: 20px;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 10001;
+        }
+
+        .call-info h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .call-info p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
         /* Уведомления */
         .notification {
             position: fixed;
-            top: 30px;
-            right: 30px;
+            top: 20px;
+            right: 20px;
+            left: 20px;
             background: var(--primary);
             color: white;
-            padding: 15px 25px;
-            border-radius: 15px;
+            padding: 15px 20px;
+            border-radius: 12px;
             box-shadow: var(--shadow);
             display: flex;
             align-items: center;
             gap: 12px;
-            transform: translateX(400px);
+            transform: translateX(150%);
             transition: transform 0.3s;
-            z-index: 1000;
+            z-index: 11000;
+            max-width: 350px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .notification {
+                left: auto;
+                width: auto;
+                min-width: 300px;
+            }
         }
 
         .notification.show {
@@ -587,14 +753,14 @@
 
         /* Индикатор печатания */
         .typing-indicator {
-            padding: 10px;
+            padding: 8px;
             display: flex;
             gap: 3px;
         }
 
         .typing-indicator span {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             background: var(--text-light);
             border-radius: 50%;
             animation: typing 1s infinite;
@@ -610,7 +776,7 @@
 
         /* Скроллбар */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
 
         ::-webkit-scrollbar-track {
@@ -619,72 +785,7 @@
 
         ::-webkit-scrollbar-thumb {
             background: var(--text-light);
-            border-radius: 3px;
-        }
-
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
-            
-            .chat-header-avatar {
-                width: 35px;
-                height: 35px;
-            }
-            
-            .message {
-                max-width: 80%;
-            }
-        }
-
-        /* Анимации */
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Стили для статуса подключения */
-        .connection-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .connection-status i {
-            font-size: 8px;
-        }
-
-        .status-connected i { color: #4ade80; }
-        .status-disconnected i { color: #f87171; }
-
-        /* Эффекты при наведении */
-        .hover-scale {
-            transition: transform 0.2s;
-        }
-
-        .hover-scale:hover {
-            transform: scale(1.05);
-        }
-
-        .hover-shadow {
-            transition: box-shadow 0.2s;
-        }
-
-        .hover-shadow:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 2px;
         }
     </style>
 </head>
@@ -694,7 +795,7 @@
         <div class="top-bar">
             <div class="logo">
                 <i class="fas fa-leaf"></i>
-                <h1>Limongram</h1>
+                <h1>LimonGram</h1>
             </div>
             <div class="online-status" id="connectionStatus">
                 <span class="online-dot"></span>
@@ -704,17 +805,17 @@
 
         <!-- Экран входа -->
         <div class="auth-screen" id="authScreen">
-            <div class="auth-card fade-in">
+            <div class="auth-card">
                 <i class="fas fa-lock"></i>
                 <h2>Добро пожаловать</h2>
-                <p>Войдите в защищенный мессенджер с end-to-end шифрованием</p>
+                <p>Защищенный мессенджер с end-to-end шифрованием</p>
                 <input type="text" class="auth-input" id="username" placeholder="Ваше имя" autocomplete="off">
                 <button class="auth-btn" onclick="connect()">
                     <i class="fas fa-sign-in-alt"></i>
-                    Войти в Limongram
+                    Войти
                 </button>
-                <div style="margin-top: 30px; font-size: 12px; color: #999;">
-                    <i class="fas fa-shield-alt"></i> Все сообщения шифруются на вашем устройстве
+                <div style="margin-top: 20px; font-size: 11px; color: #999;">
+                    <i class="fas fa-shield-alt"></i> Все сообщения шифруются
                 </div>
             </div>
         </div>
@@ -722,68 +823,87 @@
         <!-- Основной интерфейс -->
         <div class="main-screen" id="mainScreen" style="display: none;">
             <!-- Боковая панель -->
-            <div class="sidebar">
+            <div class="sidebar" id="sidebar">
                 <div class="sidebar-header">
                     <div class="user-profile">
                         <div class="avatar" id="userAvatar"></div>
                         <div class="user-info">
                             <h4 id="userName"></h4>
-                            <p><i class="fas fa-circle" style="color: #4ade80; font-size: 8px;"></i> В сети</p>
+                            <p><i class="fas fa-circle" style="color: #4ade80; font-size: 6px;"></i> В сети</p>
                         </div>
                     </div>
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="searchChats" placeholder="Поиск собеседников...">
+                        <input type="text" id="searchChats" placeholder="Поиск...">
                     </div>
                 </div>
-                <div class="chat-list" id="userList">
-                    <!-- Список пользователей будет здесь -->
-                </div>
+                <div class="chat-list" id="userList"></div>
             </div>
 
             <!-- Область чата -->
             <div class="chat-area">
                 <div class="chat-header">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <div class="chat-header-info" id="chatHeader">
                         <div class="chat-header-avatar" id="chatAvatar">👤</div>
                         <div class="chat-header-text">
-                            <h3 id="chatName">Выберите собеседника</h3>
+                            <h3 id="chatName">Выберите чат</h3>
                             <p id="chatStatus"><i class="fas fa-lock" style="color: var(--primary);"></i> Защищено</p>
                         </div>
                     </div>
                     <div class="chat-actions">
-                        <button class="action-btn" title="Видеозвонок">
+                        <button class="action-btn" onclick="startVideoCall()" title="Видеозвонок">
                             <i class="fas fa-video"></i>
                         </button>
-                        <button class="action-btn" title="Голосовой звонок">
+                        <button class="action-btn" onclick="startAudioCall()" title="Аудиозвонок">
                             <i class="fas fa-phone"></i>
                         </button>
-                        <button class="action-btn" title="Поиск">
-                            <i class="fas fa-search"></i>
+                        <button class="action-btn" onclick="toggleMute()" title="Микрофон" style="display: none;" id="muteBtn">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button class="action-btn" onclick="endCall()" title="Завершить" style="display: none;" id="endCallBtn">
+                            <i class="fas fa-phone-slash" style="color: #f44336;"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="messages-container" id="messages">
-                    <!-- Сообщения будут здесь -->
-                </div>
+                <div class="messages-container" id="messages"></div>
 
                 <div class="input-area">
                     <div class="input-wrapper">
                         <input type="text" id="messageInput" placeholder="Сообщение..." disabled>
-                        <div class="input-actions">
-                            <button title="Эмодзи">
-                                <i class="far fa-smile"></i>
-                            </button>
-                            <button title="Прикрепить">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                        </div>
                     </div>
                     <button class="send-btn" onclick="sendMessage()" id="sendButton" disabled>
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно видеозвонка -->
+    <div id="callContainer">
+        <div>
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div class="local-video-container">
+                <video id="localVideo" autoplay playsinline muted></video>
+            </div>
+            <div class="call-controls">
+                <button class="call-btn mute" onclick="toggleMute()">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="call-btn video" onclick="toggleCamera()">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="call-btn end" onclick="endCall()">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+            <div class="call-info">
+                <h2 id="callStatus">Звонок...</h2>
+                <p id="callPartner"></p>
             </div>
         </div>
     </div>
@@ -796,28 +916,51 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
-        // Конфигурация
+        // ============ КОНФИГУРАЦИЯ ============
         const SERVER_URL = "wss://limongram-messenger.onrender.com";
         
-        // Глобальные переменные
+        // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
         let ws = null;
         let myName = "";
         let currentChat = null;
         let myKey = CryptoJS.lib.WordArray.random(32).toString();
         let peerKeys = {};
         let onlineUsers = [];
+        
+        // Переменные для звонков
+        let peerConnection = null;
+        let localStream = null;
+        let remoteStream = null;
+        let currentCall = null;
+        let isMuted = false;
+        let isVideoEnabled = true;
+        
+        // STUN серверы
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
+            ]
+        };
 
-        // Показать уведомление
+        // ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ============
         function showNotification(text, isError = false) {
             const notification = document.getElementById('notification');
             const notificationText = document.getElementById('notificationText');
             notificationText.textContent = text;
-            notification.style.background = isError ? '#f87171' : 'var(--primary)';
+            notification.style.background = isError ? '#f44336' : 'var(--primary)';
             notification.classList.add('show');
             setTimeout(() => notification.classList.remove('show'), 3000);
         }
 
-        // Подключение
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        // ============ ПОДКЛЮЧЕНИЕ К СЕРВЕРУ ============
         function connect() {
             myName = document.getElementById('username').value.trim();
             
@@ -828,21 +971,23 @@
 
             document.getElementById('connectionStatus').innerHTML = `
                 <span class="online-dot"></span>
-                <span>Подключение к серверу...</span>
+                <span>Подключение...</span>
             `;
 
             ws = new WebSocket(`${SERVER_URL}/ws/${myName}`);
 
             ws.onopen = () => {
-                console.log('✅ Подключено к серверу');
-                
-                // Отправляем ключ
-                ws.send(JSON.stringify({
-                    type: "key_exchange",
-                    key: myKey
-                }));
+    console.log('✅ Подключено к серверу');
+    
+    // Отправляем ключ
+    ws.send(JSON.stringify({
+        type: "key_exchange",
+        key: myKey
+    }));
+    
+    // Запускаем систему принудительной отправки
+    initForceKeyExchange();
 
-                // Переключаем интерфейс
                 document.getElementById('authScreen').style.display = 'none';
                 document.getElementById('mainScreen').style.display = 'flex';
                 
@@ -851,61 +996,81 @@
 
                 document.getElementById('connectionStatus').innerHTML = `
                     <span class="online-dot"></span>
-                    <span>В сети как ${myName}</span>
+                    <span>${myName}</span>
                 `;
 
                 showNotification(`✅ Добро пожаловать, ${myName}!`);
             };
 
             ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                console.log('📨 Получено:', data);
+    const data = JSON.parse(event.data);
+    console.log('📨 Получено:', data);
 
-                if (data.type === 'users') {
-                    updateUserList(data.users);
-                }
-                else if (data.type === 'key_exchange') {
-                    peerKeys[data.from] = data.key;
-                    showNotification(`🔑 Получен ключ от ${data.from}`);
-                    updateUserList(onlineUsers);
-                }
-                else if (data.type === 'encrypted') {
-                    try {
-                        const decrypted = CryptoJS.AES.decrypt(
-                            data.data.ciphertext,
-                            myKey,
-                            { iv: CryptoJS.enc.Hex.parse(data.data.iv) }
-                        ).toString(CryptoJS.enc.Utf8);
+    if (data.type === 'users') {
+        onlineUsers = data.users;
+        updateUserList(data.users);
+    }
+    else if (data.type === 'key_exchange') {
+        handleKeyExchange(data);
+    }
+    else if (data.type === 'request_key') {
+        handleKeyRequest(data);
+    }
+    else if (data.type === 'encrypted') {
+        try {
+            const decrypted = CryptoJS.AES.decrypt(
+                data.data.ciphertext,
+                myKey,
+                { iv: CryptoJS.enc.Hex.parse(data.data.iv) }
+            ).toString(CryptoJS.enc.Utf8);
 
-                        if (decrypted) {
-                            addMessage(data.from, decrypted, true);
-                            
-                            // Обновляем последнее сообщение в списке чатов
-                            updateLastMessage(data.from, decrypted);
-                        }
-                    } catch (e) {
-                        console.error('Ошибка расшифровки:', e);
-                    }
-                }
-            };
+            if (decrypted) {
+                addMessage(data.from, decrypted, true);
+                updateLastMessage(data.from, decrypted);
+            }
+        } catch (e) {
+            console.error('❌ Ошибка расшифровки:', e);
+        }
+    }
+    else if (data.type === 'call_offer') {
+        if (confirm(`📞 Входящий звонок от ${data.caller}! Принять?`)) {
+            acceptCall(data.offer, data.caller);
+        } else {
+            ws.send(JSON.stringify({type: "call_reject", to: data.caller}));
+        }
+    }
+    else if (data.type === 'call_answer') {
+        if (peerConnection) {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+            document.getElementById('callStatus').innerHTML = '📞 В разговоре';
+        }
+    }
+    else if (data.type === 'ice_candidate') {
+        if (peerConnection) {
+            peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+    }
+    else if (data.type === 'call_end' || data.type === 'call_reject') {
+        endCall();
+        showNotification(`📞 Звонок ${data.type === 'call_reject' ? 'отклонен' : 'завершен'}`);
+    }
+};
 
             ws.onclose = () => {
                 document.getElementById('connectionStatus').innerHTML = `
-                    <span style="color: #f87171;">●</span>
-                    <span>Отключено</span>
+                    <span style="color: #f87171;">●</span> Отключено
                 `;
                 showNotification('❌ Соединение потеряно', true);
             };
 
             ws.onerror = (error) => {
-                console.error('❌ Ошибка:', error);
-                showNotification('❌ Ошибка подключения', true);
+                console.error('❌ Ошибка WebSocket:', error);
+                showNotification('❌ Ошибка соединения', true);
             };
         }
 
-        // Обновление списка пользователей
+        // ============ УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ============
         function updateUserList(users) {
-            onlineUsers = users;
             const userList = document.getElementById('userList');
             userList.innerHTML = '';
 
@@ -913,10 +1078,9 @@
 
             if (otherUsers.length === 0) {
                 userList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: var(--text-light);">
-                        <i class="fas fa-users" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i>
-                        <p>Нет пользователей онлайн</p>
-                        <p style="font-size: 13px; margin-top: 10px;">Пригласите друзей!</p>
+                    <div style="text-align: center; padding: 30px; color: var(--text-light);">
+                        <i class="fas fa-users" style="font-size: 30px; opacity: 0.5;"></i>
+                        <p style="margin-top: 10px;">Нет пользователей</p>
                     </div>
                 `;
                 return;
@@ -924,48 +1088,41 @@
 
             otherUsers.forEach(user => {
                 const hasKey = peerKeys[user] ? '🔐' : '⌛';
-                const status = peerKeys[user] ? 'Защищено' : 'Ожидание ключа...';
                 
                 const div = document.createElement('div');
                 div.className = `chat-item ${currentChat === user ? 'active' : ''}`;
                 div.onclick = () => selectChat(user);
                 
                 div.innerHTML = `
-                    <div class="chat-avatar online">
-                        ${user.charAt(0).toUpperCase()}
-                    </div>
+                    <div class="chat-avatar online">${user.charAt(0).toUpperCase()}</div>
                     <div class="chat-info">
                         <div class="chat-name">
                             ${user}
-                            ${peerKeys[user] ? '<i class="fas fa-lock" style="color: var(--primary);"></i>' : ''}
+                            ${peerKeys[user] ? '<i class="fas fa-lock"></i>' : ''}
                         </div>
                         <div class="chat-preview" id="preview-${user}">
-                            ${status}
+                            ${peerKeys[user] ? 'Защищено' : 'Ожидание ключа...'}
                         </div>
                     </div>
-                    <div class="chat-time" id="time-${user}">
-                        ${new Date().toLocaleTimeString().slice(0,5)}
-                    </div>
+                    <div class="chat-time" id="time-${user}"></div>
                 `;
                 
                 userList.appendChild(div);
             });
         }
 
-        // Выбор чата
         function selectChat(user) {
             currentChat = user;
             
             document.getElementById('chatAvatar').textContent = user.charAt(0).toUpperCase();
             document.getElementById('chatName').textContent = user;
             document.getElementById('chatStatus').innerHTML = peerKeys[user] ? 
-                '<i class="fas fa-lock" style="color: var(--primary);"></i> Защищено' : 
+                '<i class="fas fa-lock"></i> Защищено' : 
                 '<i class="fas fa-clock"></i> Ожидание ключа...';
             
             document.getElementById('messageInput').disabled = false;
             document.getElementById('sendButton').disabled = false;
             
-            // Подсветка активного чата
             document.querySelectorAll('.chat-item').forEach(item => {
                 item.classList.remove('active');
                 if (item.querySelector('.chat-name').textContent.trim() === user) {
@@ -973,10 +1130,27 @@
                 }
             });
 
-            showNotification(`💬 Чат с ${user}`);
+            // На телефоне закрываем sidebar после выбора чата
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
         }
 
-        // Отправка сообщения
+        function updateLastMessage(user, text) {
+            const preview = document.getElementById(`preview-${user}`);
+            const time = document.getElementById(`time-${user}`);
+            
+            if (preview) {
+                preview.textContent = text.length > 25 ? text.substring(0, 25) + '...' : text;
+            }
+            if (time) {
+                const now = new Date();
+                time.textContent = now.getHours().toString().padStart(2,'0') + ':' + 
+                                 now.getMinutes().toString().padStart(2,'0');
+            }
+        }
+
+        // ============ ОТПРАВКА СООБЩЕНИЙ ============
         function sendMessage() {
             if (!currentChat) {
                 showNotification('Выберите собеседника!', true);
@@ -990,7 +1164,7 @@
 
             const peerKey = peerKeys[currentChat];
             if (!peerKey) {
-                showNotification('⌛ Ожидание ключа шифрования...', true);
+                showNotification('⌛ Ожидание ключа...', true);
                 return;
             }
 
@@ -1010,20 +1184,17 @@
                 }
             }));
 
-            addMessage(`Вы → ${currentChat}`, message, false);
-            
-            // Обновляем превью в списке чатов
+            addMessage(`Вы`, message, false);
             updateLastMessage(currentChat, message);
             
             input.value = '';
         }
 
-        // Добавление сообщения в чат
         function addMessage(sender, text, incoming) {
             const messages = document.getElementById('messages');
             
             const div = document.createElement('div');
-            div.className = `message ${incoming ? 'incoming' : 'outgoing'} fade-in`;
+            div.className = `message ${incoming ? 'incoming' : 'outgoing'}`;
             
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
@@ -1031,8 +1202,7 @@
                 ${incoming ? `<div class="message-sender">${sender}</div>` : ''}
                 <div class="message-text">${text}</div>
                 <div class="message-meta">
-                    ${time}
-                    <i class="fas fa-lock" style="font-size: 10px;"></i>
+                    ${time} <i class="fas fa-lock"></i>
                 </div>
             `;
             
@@ -1040,33 +1210,261 @@
             messages.scrollTop = messages.scrollHeight;
         }
 
-        // Обновление последнего сообщения в списке чатов
-        function updateLastMessage(user, text) {
-            const preview = document.getElementById(`preview-${user}`);
-            const time = document.getElementById(`time-${user}`);
-            
-            if (preview) {
-                preview.textContent = text.length > 30 ? text.substring(0, 30) + '...' : text;
+        // ============ ФУНКЦИИ ЗВОНКОВ ============
+        async function startVideoCall() {
+            if (!currentChat) {
+                showNotification('Выберите собеседника!', true);
+                return;
             }
-            if (time) {
-                time.textContent = new Date().toLocaleTimeString().slice(0,5);
+            
+            try {
+                showNotification('📹 Запрашиваю камеру...');
+                
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                
+                document.getElementById('localVideo').srcObject = localStream;
+                document.getElementById('callContainer').style.display = 'block';
+                document.getElementById('callPartner').textContent = currentChat;
+                document.getElementById('callStatus').innerHTML = '⏳ Звонок...';
+                
+                document.getElementById('muteBtn').style.display = 'inline-flex';
+                document.getElementById('endCallBtn').style.display = 'inline-flex';
+                
+                peerConnection = new RTCPeerConnection(configuration);
+                
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+                
+                peerConnection.ontrack = (event) => {
+                    remoteStream = event.streams[0];
+                    document.getElementById('remoteVideo').srcObject = remoteStream;
+                    document.getElementById('callStatus').innerHTML = '📞 В разговоре';
+                };
+                
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate && ws?.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "ice_candidate",
+                            to: currentChat,
+                            candidate: event.candidate
+                        }));
+                    }
+                };
+                
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                ws.send(JSON.stringify({
+                    type: "call_offer",
+                    to: currentChat,
+                    offer: offer,
+                    caller: myName
+                }));
+                
+                currentCall = currentChat;
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Нет доступа к камере', true);
+                endCall();
             }
         }
 
-        // Поиск по чатам
+        async function startAudioCall() {
+            if (!currentChat) {
+                showNotification('Выберите собеседника!', true);
+                return;
+            }
+            
+            try {
+                showNotification('🎤 Запрашиваю микрофон...');
+                
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: false, 
+                    audio: true 
+                });
+                
+                document.getElementById('callContainer').style.display = 'block';
+                document.getElementById('callPartner').textContent = currentChat;
+                document.getElementById('callStatus').innerHTML = '⏳ Аудиозвонок...';
+                
+                document.querySelector('.local-video-container').style.display = 'none';
+                
+                document.getElementById('muteBtn').style.display = 'inline-flex';
+                document.getElementById('endCallBtn').style.display = 'inline-flex';
+                
+                peerConnection = new RTCPeerConnection(configuration);
+                
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+                
+                peerConnection.ontrack = (event) => {
+                    remoteStream = event.streams[0];
+                    document.getElementById('callStatus').innerHTML = '📞 В разговоре';
+                };
+                
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate && ws?.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "ice_candidate",
+                            to: currentChat,
+                            candidate: event.candidate
+                        }));
+                    }
+                };
+                
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                ws.send(JSON.stringify({
+                    type: "call_offer",
+                    to: currentChat,
+                    offer: offer,
+                    caller: myName
+                }));
+                
+                currentCall = currentChat;
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Нет доступа к микрофону', true);
+                endCall();
+            }
+        }
+
+        async function acceptCall(offer, caller) {
+            try {
+                if (!localStream) {
+                    localStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true, 
+                        audio: true 
+                    });
+                }
+                
+                document.getElementById('localVideo').srcObject = localStream;
+                document.getElementById('callContainer').style.display = 'block';
+                document.getElementById('callPartner').textContent = caller;
+                document.getElementById('callStatus').innerHTML = '📞 Принятие...';
+                
+                document.getElementById('muteBtn').style.display = 'inline-flex';
+                document.getElementById('endCallBtn').style.display = 'inline-flex';
+                
+                peerConnection = new RTCPeerConnection(configuration);
+                
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+                
+                peerConnection.ontrack = (event) => {
+                    remoteStream = event.streams[0];
+                    document.getElementById('remoteVideo').srcObject = remoteStream;
+                    document.getElementById('callStatus').innerHTML = '📞 В разговоре';
+                };
+                
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate && ws?.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "ice_candidate",
+                            to: caller,
+                            candidate: event.candidate
+                        }));
+                    }
+                };
+                
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                ws.send(JSON.stringify({
+                    type: "call_answer",
+                    to: caller,
+                    answer: answer
+                }));
+                
+                currentCall = caller;
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Ошибка приема звонка', true);
+                endCall();
+            }
+        }
+
+        function endCall() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            document.getElementById('callContainer').style.display = 'none';
+            document.getElementById('muteBtn').style.display = 'none';
+            document.getElementById('endCallBtn').style.display = 'none';
+            
+            document.querySelector('.local-video-container').style.display = 'block';
+            
+            if (currentCall && ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: "call_end",
+                    to: currentCall
+                }));
+            }
+            
+            currentCall = null;
+        }
+
+        function toggleMute() {
+            if (localStream) {
+                isMuted = !isMuted;
+                localStream.getAudioTracks().forEach(track => {
+                    track.enabled = !isMuted;
+                });
+                
+                const muteBtn = document.querySelector('#muteBtn i');
+                if (muteBtn) {
+                    muteBtn.className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+                }
+                
+                const callMuteBtn = document.querySelector('.call-btn.mute i');
+                if (callMuteBtn) {
+                    callMuteBtn.className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+                }
+            }
+        }
+
+        function toggleCamera() {
+            if (localStream) {
+                isVideoEnabled = !isVideoEnabled;
+                localStream.getVideoTracks().forEach(track => {
+                    track.enabled = isVideoEnabled;
+                });
+                
+                const cameraBtn = document.querySelector('.call-btn.video i');
+                if (cameraBtn) {
+                    cameraBtn.className = isVideoEnabled ? 'fas fa-video' : 'fas fa-video-slash';
+                }
+            }
+        }
+
+        // ============ ПОИСК ============
         document.getElementById('searchChats').addEventListener('input', (e) => {
             const search = e.target.value.toLowerCase();
             document.querySelectorAll('.chat-item').forEach(item => {
                 const name = item.querySelector('.chat-name').textContent.toLowerCase();
-                if (name.includes(search)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+                item.style.display = name.includes(search) ? 'flex' : 'none';
             });
         });
 
-        // Отправка по Enter
+        // ============ ОТПРАВКА ПО ENTER ============
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -1074,8 +1472,180 @@
             }
         });
 
-        // Фокус на поле ввода имени
+        // ============ ФОКУС ПРИ ЗАГРУЗКЕ ============
         document.getElementById('username').focus();
+	
+	// ============ ПРИНУДИТЕЛЬНАЯ ОТПРАВКА КЛЮЧЕЙ ============
+
+// Функция для принудительной отправки ключа конкретному пользователю
+function forceSendKeyToUser(targetUser) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.log('❌ Нет соединения');
+        return;
+    }
+    
+    console.log(`🔑 Принудительно отправляю ключ ${targetUser}`);
+    
+    // Отправляем ключ напрямую через сервер
+    ws.send(JSON.stringify({
+        type: "key_exchange",
+        to: targetUser,  // Указываем конкретного получателя
+        key: myKey
+    }));
+    
+    // Также отправляем в общую рассылку
+    ws.send(JSON.stringify({
+        type: "key_exchange",
+        key: myKey
+    }));
+}
+
+// Функция для запроса ключа у конкретного пользователя
+function requestKeyFromUser(targetUser) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    
+    console.log(`🔄 Запрашиваю ключ у ${targetUser}`);
+    
+    ws.send(JSON.stringify({
+        type: "request_key",
+        to: targetUser
+    }));
+}
+
+// Периодическая проверка наличия ключей
+function checkKeysPeriodically() {
+    setInterval(() => {
+        if (!currentChat || !onlineUsers.length) return;
+        
+        // Для каждого онлайн пользователя проверяем наличие ключа
+        onlineUsers.forEach(user => {
+            if (user === myName) return; // Пропускаем себя
+            
+            if (!peerKeys[user]) {
+                console.log(`⚠️ Нет ключа от ${user}, запрашиваю...`);
+                requestKeyFromUser(user);
+                forceSendKeyToUser(user);
+            }
+        });
+    }, 3000); // Проверяем каждые 3 секунды
+}
+
+// Улучшенная отправка ключа при подключении
+function sendKeyWithRetry() {
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    function trySendKey() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(trySendKey, 1000);
+            }
+            return;
+        }
+        
+        console.log('🔑 Отправляю ключ всем (попытка ' + (attempts + 1) + ')');
+        
+        // Отправляем ключ несколько раз для надежности
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: "key_exchange",
+                        key: myKey
+                    }));
+                }
+            }, i * 500);
+        }
+        
+        // Также отправляем каждому пользователю индивидуально
+        if (onlineUsers.length > 0) {
+            onlineUsers.forEach(user => {
+                if (user !== myName) {
+                    setTimeout(() => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                type: "key_exchange",
+                                to: user,
+                                key: myKey
+                            }));
+                        }
+                    }, 1000);
+                }
+            });
+        }
+    }
+    
+    trySendKey();
+}
+
+// Добавьте эту функцию в ws.onmessage
+function handleKeyExchange(data) {
+    console.log(`🔑 Получен ключ от ${data.from}:`, data.key.substring(0, 10) + '...');
+    
+    // Сохраняем ключ
+    peerKeys[data.from] = data.key;
+    
+        // Обновляем список пользователей
+    if (typeof updateUserList === 'function') {
+        updateUserList(onlineUsers);
+    }
+    
+    // Если это наш текущий чат, обновляем статус
+    if (currentChat === data.from) {
+        document.getElementById('chatStatus').innerHTML = '<i class="fas fa-lock"></i> Защищено';
+    }
+    
+    // Отправляем свой ключ в ответ (на всякий случай)
+    setTimeout(() => {
+        if (ws?.readyState === WebSocket.OPEN && !peerKeys[myName]) {
+            ws.send(JSON.stringify({
+                type: "key_exchange",
+                to: data.from,
+                key: myKey
+            }));
+        }
+    }, 500);
+}
+
+// Перехватываем и обрабатываем запросы ключей
+function handleKeyRequest(data) {
+    console.log(`🔄 Запрос ключа от ${data.from}`);
+    
+    // Немедленно отправляем ключ
+    if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: "key_exchange",
+            to: data.from,
+            key: myKey
+        }));
+    }
+}
+
+// Инициализация системы принудительной отправки
+function initForceKeyExchange() {
+    console.log('🔐 Запуск системы принудительной отправки ключей');
+    
+    // Запускаем периодическую проверку
+    checkKeysPeriodically();
+    
+    // Отправляем ключи при подключении
+    setTimeout(() => {
+        sendKeyWithRetry();
+    }, 1000);
+    
+    // Повторная отправка каждые 10 секунд для новых пользователей
+    setInterval(() => {
+        if (onlineUsers.length > 0 && ws?.readyState === WebSocket.OPEN) {
+            onlineUsers.forEach(user => {
+                if (user !== myName && !peerKeys[user]) {
+                    console.log(`🔄 Повторная отправка ключа для ${user}`);
+                    forceSendKeyToUser(user);
+                }
+            });
+        }
+    }, 10000);
+}
     </script>
 </body>
 </html>
