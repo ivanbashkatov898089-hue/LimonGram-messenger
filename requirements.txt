@@ -1,25 +1,5 @@
-# Limongram - Безопасный мессенджер с шифрованием
-# Основные зависимости
-
-# FastAPI - современный веб-фреймворк для создания API
+# requirements.txt
 fastapi==0.104.1
-
-# Uvicorn - ASGI сервер для запуска FastAPI
 uvicorn==0.24.0
-
-# WebSockets - для реального времени (чат и звонки)
 websockets==12.0
-
-# Cryptography - для шифрования сообщений
-cryptography==41.0.7
-
-# Python-multipart - для обработки форм (на будущее)
 python-multipart==0.0.6
-
-# Дополнительные полезные пакеты (опционально)
-
-# python-dotenv - для работы с переменными окружения
-python-dotenv==1.0.0
-
-# aiofiles - для асинхронной работы с файлами
-aiofiles==23.2.1
