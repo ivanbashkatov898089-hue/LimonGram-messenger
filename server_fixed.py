@@ -1,4 +1,4 @@
-# server_fixed.py
+# server_fixed.py - для деплоя на Render.com
 import asyncio
 import json
 import logging
@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Limongram Messenger API")
 
-# Настройка CORS - разрешаем все источники для разработки
+# Настройка CORS - разрешаем все источники для работы с Render.com
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # В продакшене лучше указать конкретные домены
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -97,18 +97,18 @@ manager = ConnectionManager()
 @app.get("/")
 async def root():
     return {
-        "message": "🍋 Limongram Server is running",
+        "message": "🍋 Limongram Server is running on Render.com",
         "status": "online",
+        "timestamp": datetime.now().isoformat(),
+        "connections": len(manager.active_connections),
         "endpoints": {
             "GET /": "This page",
             "GET /health": "Health check",
-            "POST /register": "Register user (not used in this version)",
-            "POST /login": "Login user (not used in this version)",
             "WS /ws/{username}": "WebSocket connection"
         }
     }
 
-# Эндпоинт для проверки здоровья
+# Эндпоинт для проверки здоровья (важно для Render.com)
 @app.get("/health")
 async def health_check():
     return {
@@ -117,21 +117,14 @@ async def health_check():
         "connections": len(manager.active_connections)
     }
 
-# Эндпоинт для статического HTML (если нужно)
-@app.get("/app")
-async def get_app():
-    try:
-        if os.path.exists("index.html"):
-            with open("index.html", "r", encoding="utf-8") as f:
-                html_content = f.read()
-            return HTMLResponse(content=html_content)
-        else:
-            return JSONResponse({
-                "error": "index.html not found",
-                "message": "Please create index.html file"
-            })
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+# Эндпоинт для получения статистики
+@app.get("/stats")
+async def get_stats():
+    return {
+        "users_online": list(manager.active_connections.keys()),
+        "total_connections": len(manager.active_connections),
+        "timestamp": datetime.now().isoformat()
+    }
 
 # WebSocket эндпоинт для обмена сообщениями
 @app.websocket("/ws/{username}")
@@ -250,23 +243,21 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
         logger.error(f"❌ WebSocket error for {username}: {e}")
         manager.disconnect(websocket)
 
-# Функция для запуска сервера
-def start_server():
-    """Запускает сервер на порту 8000"""
-    print("🍋 Limongram Server starting...")
-    print("📡 WebSocket endpoint: ws://localhost:8000/ws/{username}")
-    print("🌐 HTTP endpoint: http://localhost:8000")
-    print("🔍 Health check: http://localhost:8000/health")
-    print("📁 Static files: http://localhost:8000/app (if index.html exists)")
-    print("Press Ctrl+C to stop the server")
+# Для локального запуска
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))  # Render.com задает переменную PORT
+    host = "0.0.0.0"
+    
+    print(f"🍋 Limongram Server starting...")
+    print(f"📡 WebSocket endpoint: ws://{host}:{port}/ws/{{username}}")
+    print(f"🌐 HTTP endpoint: http://{host}:{port}")
+    print(f"🔍 Health check: http://{host}:{port}/health")
+    print(f"📊 Stats: http://{host}:{port}/stats")
+    print(f"Press Ctrl+C to stop the server")
     
     uvicorn.run(
         "server_fixed:app", 
-        host="0.0.0.0", 
-        port=8000, 
-        reload=True,
-        log_level="info"
+        host=host, 
+        port=port, 
+        reload=False  # В продакшене reload должен быть False
     )
-
-if __name__ == "__main__":
-    start_server()
