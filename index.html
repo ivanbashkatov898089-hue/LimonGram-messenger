@@ -6,6 +6,7 @@
     <title>Limongram — защищенный мессенджер</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Стили остаются такими же, как в вашем файле */
         * {
             margin: 0;
             padding: 0;
@@ -38,7 +39,6 @@
             margin: 0;
         }
 
-        /* Главный контейнер */
         .app {
             width: 100%;
             max-width: 1300px;
@@ -50,7 +50,6 @@
             flex-direction: column;
         }
 
-        /* Верхняя панель */
         .top-bar {
             background: var(--primary);
             padding: 12px 16px;
@@ -98,7 +97,6 @@
             50% { opacity: 0.5; }
         }
 
-        /* Экран входа */
         .auth-screen {
             flex: 1;
             display: flex;
@@ -176,7 +174,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
-        /* Основной интерфейс */
         .main-screen {
             flex: 1;
             display: flex;
@@ -184,7 +181,6 @@
             position: relative;
         }
 
-        /* Боковая панель с чатами */
         .sidebar {
             width: 100%;
             max-width: 350px;
@@ -364,7 +360,6 @@
             flex-shrink: 0;
         }
 
-        /* Основная область чата */
         .chat-area {
             flex: 1;
             display: flex;
@@ -470,7 +465,6 @@
             transform: scale(1.05);
         }
 
-        /* Область сообщений */
         .messages-container {
             flex: 1;
             padding: 16px;
@@ -542,7 +536,6 @@
             justify-content: flex-end;
         }
 
-        /* Панель ввода */
         .input-area {
             padding: 12px 16px;
             background: white;
@@ -600,7 +593,6 @@
             box-shadow: none;
         }
 
-        /* Окно видеозвонка */
         #callContainer {
             position: fixed;
             top: 0;
@@ -718,7 +710,6 @@
             opacity: 0.9;
         }
 
-        /* Уведомления */
         .notification {
             position: fixed;
             top: 20px;
@@ -751,7 +742,6 @@
             transform: translateX(0);
         }
 
-        /* Индикатор печатания */
         .typing-indicator {
             padding: 8px;
             display: flex;
@@ -774,7 +764,6 @@
             50% { transform: translateY(-5px); }
         }
 
-        /* Скроллбар */
         ::-webkit-scrollbar {
             width: 4px;
         }
@@ -791,7 +780,6 @@
 </head>
 <body>
     <div class="app">
-        <!-- Верхняя панель -->
         <div class="top-bar">
             <div class="logo">
                 <i class="fas fa-leaf"></i>
@@ -803,7 +791,6 @@
             </div>
         </div>
 
-        <!-- Экран входа -->
         <div class="auth-screen" id="authScreen">
             <div class="auth-card">
                 <i class="fas fa-lock"></i>
@@ -820,9 +807,7 @@
             </div>
         </div>
 
-        <!-- Основной интерфейс -->
         <div class="main-screen" id="mainScreen" style="display: none;">
-            <!-- Боковая панель -->
             <div class="sidebar" id="sidebar">
                 <div class="sidebar-header">
                     <div class="user-profile">
@@ -840,7 +825,6 @@
                 <div class="chat-list" id="userList"></div>
             </div>
 
-            <!-- Область чата -->
             <div class="chat-area">
                 <div class="chat-header">
                     <button class="menu-toggle" onclick="toggleSidebar()">
@@ -883,7 +867,6 @@
         </div>
     </div>
 
-    <!-- Окно видеозвонка -->
     <div id="callContainer">
         <div>
             <video id="remoteVideo" autoplay playsinline></video>
@@ -908,7 +891,6 @@
         </div>
     </div>
 
-    <!-- Уведомление -->
     <div class="notification" id="notification">
         <i class="fas fa-bell"></i>
         <span id="notificationText">Уведомление</span>
@@ -916,7 +898,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
-        
         // ============ КОНФИГУРАЦИЯ ============
 // Автоматическое определение URL сервера
 const SERVER_URL = (() => {
@@ -943,8 +924,9 @@ const SERVER_URL = (() => {
         let currentCall = null;
         let isMuted = false;
         let isVideoEnabled = true;
+        let callTimeout = null;
         
-        // STUN серверы
+        // STUN серверы для WebRTC
         const configuration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -983,94 +965,101 @@ const SERVER_URL = (() => {
                 <span>Подключение...</span>
             `;
 
-            ws = new WebSocket(`${SERVER_URL}/ws/${myName}`);
+            try {
+                ws = new WebSocket(`${SERVER_URL}/ws/${myName}`);
 
-            ws.onopen = () => {
-                console.log('✅ Подключено к серверу');
-                
-                ws.send(JSON.stringify({
-                    type: "key_exchange",
-                    key: myKey
-                }));
+                ws.onopen = () => {
+                    console.log('✅ Подключено к серверу');
+                    
+                    ws.send(JSON.stringify({
+                        type: "key_exchange",
+                        key: myKey
+                    }));
 
-                document.getElementById('authScreen').style.display = 'none';
-                document.getElementById('mainScreen').style.display = 'flex';
-                
-                document.getElementById('userAvatar').textContent = myName.charAt(0).toUpperCase();
-                document.getElementById('userName').textContent = myName;
+                    document.getElementById('authScreen').style.display = 'none';
+                    document.getElementById('mainScreen').style.display = 'flex';
+                    
+                    document.getElementById('userAvatar').textContent = myName.charAt(0).toUpperCase();
+                    document.getElementById('userName').textContent = myName;
 
-                document.getElementById('connectionStatus').innerHTML = `
-                    <span class="online-dot"></span>
-                    <span>${myName}</span>
-                `;
+                    document.getElementById('connectionStatus').innerHTML = `
+                        <span class="online-dot"></span>
+                        <span>${myName}</span>
+                    `;
 
-                showNotification(`✅ Добро пожаловать, ${myName}!`);
-            };
+                    showNotification(`✅ Добро пожаловать, ${myName}!`);
+                };
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                console.log('📨 Получено:', data);
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    console.log('📨 Получено:', data);
 
-                if (data.type === 'users') {
-                    onlineUsers = data.users;
-                    updateUserList(data.users);
-                }
-                else if (data.type === 'key_exchange') {
-                    peerKeys[data.from] = data.key;
-                    showNotification(`🔑 Ключ от ${data.from}`);
-                    updateUserList(onlineUsers);
-                }
-                else if (data.type === 'encrypted') {
-                    try {
-                        const decrypted = CryptoJS.AES.decrypt(
-                            data.data.ciphertext,
-                            myKey,
-                            { iv: CryptoJS.enc.Hex.parse(data.data.iv) }
-                        ).toString(CryptoJS.enc.Utf8);
+                    if (data.type === 'user_list') {
+                        onlineUsers = data.users;
+                        updateUserList(data.users);
+                    }
+                    else if (data.type === 'key_exchange') {
+                        peerKeys[data.from] = data.key;
+                        showNotification(`🔑 Ключ от ${data.from}`);
+                        updateUserList(onlineUsers);
+                    }
+                    else if (data.type === 'message') {
+                        // Прямое сообщение (для совместимости)
+                        addMessage(data.from, data.content, true);
+                        updateLastMessage(data.from, data.content);
+                    }
+                    else if (data.type === 'encrypted') {
+                        try {
+                            const decrypted = CryptoJS.AES.decrypt(
+                                data.data.ciphertext,
+                                myKey,
+                                { iv: CryptoJS.enc.Hex.parse(data.data.iv) }
+                            ).toString(CryptoJS.enc.Utf8);
 
-                        if (decrypted) {
-                            addMessage(data.from, decrypted, true);
-                            updateLastMessage(data.from, decrypted);
+                            if (decrypted) {
+                                addMessage(data.from, decrypted, true);
+                                updateLastMessage(data.from, decrypted);
+                            }
+                        } catch (e) {
+                            console.error('❌ Ошибка расшифровки:', e);
                         }
-                    } catch (e) {
-                        console.error('❌ Ошибка расшифровки:', e);
                     }
-                }
-                else if (data.type === 'call_offer') {
-                    if (confirm(`📞 Входящий звонок от ${data.caller}! Принять?`)) {
-                        acceptCall(data.offer, data.caller);
-                    } else {
-                        ws.send(JSON.stringify({type: "call_reject", to: data.caller}));
+                    else if (data.type === 'call_offer') {
+                        handleIncomingCall(data.caller, data.offer, data.call_id);
                     }
-                }
-                else if (data.type === 'call_answer') {
-                    if (peerConnection) {
-                        peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                        document.getElementById('callStatus').innerHTML = '📞 В разговоре';
+                    else if (data.type === 'call_answer') {
+                        handleCallAnswer(data.answer, data.call_id);
                     }
-                }
-                else if (data.type === 'ice_candidate') {
-                    if (peerConnection) {
-                        peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    else if (data.type === 'ice_candidate') {
+                        handleIceCandidate(data.candidate, data.call_id);
                     }
-                }
-                else if (data.type === 'call_end' || data.type === 'call_reject') {
-                    endCall();
-                    showNotification(`📞 Звонок ${data.type === 'call_reject' ? 'отклонен' : 'завершен'}`);
-                }
-            };
+                    else if (data.type === 'end_call') {
+                        handleCallEnd();
+                    }
+                };
 
-            ws.onclose = () => {
-                document.getElementById('connectionStatus').innerHTML = `
-                    <span style="color: #f87171;">●</span> Отключено
-                `;
-                showNotification('❌ Соединение потеряно', true);
-            };
+                ws.onclose = () => {
+                    document.getElementById('connectionStatus').innerHTML = `
+                        <span style="color: #f87171;">●</span> Отключено
+                    `;
+                    showNotification('❌ Соединение потеряно', true);
+                    
+                    // Пытаемся переподключиться через 3 секунды
+                    setTimeout(() => {
+                        if (myName) {
+                            connect();
+                        }
+                    }, 3000);
+                };
 
-            ws.onerror = (error) => {
-                console.error('❌ Ошибка WebSocket:', error);
-                showNotification('❌ Ошибка соединения', true);
-            };
+                ws.onerror = (error) => {
+                    console.error('❌ Ошибка WebSocket:', error);
+                    showNotification('❌ Ошибка соединения. Убедитесь, что сервер запущен!', true);
+                };
+            } catch (error) {
+                console.error('Connection error:', error);
+                showNotification('❌ Не удалось подключиться к серверу', true);
+            }
         }
 
         // ============ УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ============
@@ -1084,7 +1073,8 @@ const SERVER_URL = (() => {
                 userList.innerHTML = `
                     <div style="text-align: center; padding: 30px; color: var(--text-light);">
                         <i class="fas fa-users" style="font-size: 30px; opacity: 0.5;"></i>
-                        <p style="margin-top: 10px;">Нет пользователей</p>
+                        <p style="margin-top: 10px;">Нет пользователей в сети</p>
+                        <p style="font-size: 11px; margin-top: 5px;">Пригласите друзей!</p>
                     </div>
                 `;
                 return;
@@ -1124,8 +1114,8 @@ const SERVER_URL = (() => {
                 '<i class="fas fa-lock"></i> Защищено' : 
                 '<i class="fas fa-clock"></i> Ожидание ключа...';
             
-            document.getElementById('messageInput').disabled = false;
-            document.getElementById('sendButton').disabled = false;
+            document.getElementById('messageInput').disabled = !peerKeys[user];
+            document.getElementById('sendButton').disabled = !peerKeys[user];
             
             document.querySelectorAll('.chat-item').forEach(item => {
                 item.classList.remove('active');
@@ -1134,7 +1124,6 @@ const SERVER_URL = (() => {
                 }
             });
 
-            // На телефоне закрываем sidebar после выбора чата
             if (window.innerWidth < 768) {
                 document.getElementById('sidebar').classList.remove('active');
             }
@@ -1204,7 +1193,7 @@ const SERVER_URL = (() => {
             
             div.innerHTML = `
                 ${incoming ? `<div class="message-sender">${sender}</div>` : ''}
-                <div class="message-text">${text}</div>
+                <div class="message-text">${escapeHtml(text)}</div>
                 <div class="message-meta">
                     ${time} <i class="fas fa-lock"></i>
                 </div>
@@ -1214,6 +1203,12 @@ const SERVER_URL = (() => {
             messages.scrollTop = messages.scrollHeight;
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // ============ ФУНКЦИИ ЗВОНКОВ ============
         async function startVideoCall() {
             if (!currentChat) {
@@ -1221,59 +1216,86 @@ const SERVER_URL = (() => {
                 return;
             }
             
+            if (!peerKeys[currentChat]) {
+                showNotification('⌛ Ожидание ключа шифрования...', true);
+                return;
+            }
+            
             try {
-                showNotification('📹 Запрашиваю камеру...');
+                showNotification('📹 Запрашиваю камеру и микрофон...');
                 
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: true, 
                     audio: true 
                 });
                 
+                // Инициализация видео
                 document.getElementById('localVideo').srcObject = localStream;
                 document.getElementById('callContainer').style.display = 'block';
                 document.getElementById('callPartner').textContent = currentChat;
                 document.getElementById('callStatus').innerHTML = '⏳ Звонок...';
                 
+                // Показываем кнопки управления
                 document.getElementById('muteBtn').style.display = 'inline-flex';
                 document.getElementById('endCallBtn').style.display = 'inline-flex';
                 
+                // Создаем PeerConnection
                 peerConnection = new RTCPeerConnection(configuration);
                 
+                // Добавляем локальные треки
                 localStream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
                 });
                 
+                // Обработка удаленного потока
                 peerConnection.ontrack = (event) => {
                     remoteStream = event.streams[0];
                     document.getElementById('remoteVideo').srcObject = remoteStream;
                     document.getElementById('callStatus').innerHTML = '📞 В разговоре';
                 };
                 
+                // Обработка ICE кандидатов
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate && ws?.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({
                             type: "ice_candidate",
                             to: currentChat,
-                            candidate: event.candidate
+                            candidate: event.candidate,
+                            call_id: currentCall
                         }));
                     }
                 };
                 
-                const offer = await peerConnection.createOffer();
+                // Создаем offer
+                const offer = await peerConnection.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: true
+                });
                 await peerConnection.setLocalDescription(offer);
                 
+                // Сохраняем ID звонка
+                currentCall = Date.now().toString();
+                
+                // Отправляем offer
                 ws.send(JSON.stringify({
                     type: "call_offer",
                     to: currentChat,
-                    offer: offer,
-                    caller: myName
+                    offer: peerConnection.localDescription,
+                    caller: myName,
+                    call_id: currentCall
                 }));
                 
-                currentCall = currentChat;
+                // Таймаут на случай если собеседник не отвечает
+                callTimeout = setTimeout(() => {
+                    if (currentCall) {
+                        showNotification('⏰ Собеседник не отвечает', true);
+                        endCall();
+                    }
+                }, 30000);
                 
             } catch (error) {
                 console.error('Ошибка:', error);
-                showNotification('❌ Нет доступа к камере', true);
+                showNotification('❌ Нет доступа к камере/микрофону', true);
                 endCall();
             }
         }
@@ -1281,6 +1303,11 @@ const SERVER_URL = (() => {
         async function startAudioCall() {
             if (!currentChat) {
                 showNotification('Выберите собеседника!', true);
+                return;
+            }
+            
+            if (!peerKeys[currentChat]) {
+                showNotification('⌛ Ожидание ключа шифрования...', true);
                 return;
             }
             
@@ -1292,10 +1319,12 @@ const SERVER_URL = (() => {
                     audio: true 
                 });
                 
+                // Показываем окно звонка
                 document.getElementById('callContainer').style.display = 'block';
                 document.getElementById('callPartner').textContent = currentChat;
                 document.getElementById('callStatus').innerHTML = '⏳ Аудиозвонок...';
                 
+                // Скрываем локальное видео
                 document.querySelector('.local-video-container').style.display = 'none';
                 
                 document.getElementById('muteBtn').style.display = 'inline-flex';
@@ -1317,22 +1346,34 @@ const SERVER_URL = (() => {
                         ws.send(JSON.stringify({
                             type: "ice_candidate",
                             to: currentChat,
-                            candidate: event.candidate
+                            candidate: event.candidate,
+                            call_id: currentCall
                         }));
                     }
                 };
                 
-                const offer = await peerConnection.createOffer();
+                const offer = await peerConnection.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: false
+                });
                 await peerConnection.setLocalDescription(offer);
+                
+                currentCall = Date.now().toString();
                 
                 ws.send(JSON.stringify({
                     type: "call_offer",
                     to: currentChat,
-                    offer: offer,
-                    caller: myName
+                    offer: peerConnection.localDescription,
+                    caller: myName,
+                    call_id: currentCall
                 }));
                 
-                currentCall = currentChat;
+                callTimeout = setTimeout(() => {
+                    if (currentCall) {
+                        showNotification('⏰ Собеседник не отвечает', true);
+                        endCall();
+                    }
+                }, 30000);
                 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -1341,8 +1382,32 @@ const SERVER_URL = (() => {
             }
         }
 
-        async function acceptCall(offer, caller) {
+        function handleIncomingCall(caller, offer, callId) {
+            if (currentCall) {
+                // Уже в звонке
+                ws.send(JSON.stringify({
+                    type: "end_call",
+                    to: caller,
+                    call_id: callId
+                }));
+                return;
+            }
+            
+            if (confirm(`📞 Входящий звонок от ${caller}! Принять?`)) {
+                acceptCall(offer, caller, callId);
+            } else {
+                ws.send(JSON.stringify({
+                    type: "end_call",
+                    to: caller,
+                    call_id: callId
+                }));
+            }
+        }
+
+        async function acceptCall(offer, caller, callId) {
             try {
+                currentCall = callId;
+                
                 if (!localStream) {
                     localStream = await navigator.mediaDevices.getUserMedia({ 
                         video: true, 
@@ -1355,6 +1420,7 @@ const SERVER_URL = (() => {
                 document.getElementById('callPartner').textContent = caller;
                 document.getElementById('callStatus').innerHTML = '📞 Принятие...';
                 
+                document.querySelector('.local-video-container').style.display = 'block';
                 document.getElementById('muteBtn').style.display = 'inline-flex';
                 document.getElementById('endCallBtn').style.display = 'inline-flex';
                 
@@ -1375,7 +1441,8 @@ const SERVER_URL = (() => {
                         ws.send(JSON.stringify({
                             type: "ice_candidate",
                             to: caller,
-                            candidate: event.candidate
+                            candidate: event.candidate,
+                            call_id: currentCall
                         }));
                     }
                 };
@@ -1387,16 +1454,47 @@ const SERVER_URL = (() => {
                 ws.send(JSON.stringify({
                     type: "call_answer",
                     to: caller,
-                    answer: answer
+                    answer: peerConnection.localDescription,
+                    call_id: currentCall
                 }));
                 
-                currentCall = caller;
+                // Очищаем таймаут если был
+                if (callTimeout) {
+                    clearTimeout(callTimeout);
+                    callTimeout = null;
+                }
                 
             } catch (error) {
                 console.error('Ошибка:', error);
                 showNotification('❌ Ошибка приема звонка', true);
                 endCall();
             }
+        }
+
+        function handleCallAnswer(answer, callId) {
+            if (peerConnection && currentCall === callId) {
+                peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
+                    .then(() => {
+                        document.getElementById('callStatus').innerHTML = '📞 В разговоре';
+                        if (callTimeout) {
+                            clearTimeout(callTimeout);
+                            callTimeout = null;
+                        }
+                    })
+                    .catch(error => console.error('Error setting remote description:', error));
+            }
+        }
+
+        function handleIceCandidate(candidate, callId) {
+            if (peerConnection && currentCall === callId) {
+                peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+                    .catch(error => console.error('Error adding ICE candidate:', error));
+            }
+        }
+
+        function handleCallEnd() {
+            endCall();
+            showNotification('📞 Звонок завершен');
         }
 
         function endCall() {
@@ -1410,16 +1508,27 @@ const SERVER_URL = (() => {
                 localStream = null;
             }
             
+            if (remoteStream) {
+                remoteStream.getTracks().forEach(track => track.stop());
+                remoteStream = null;
+            }
+            
             document.getElementById('callContainer').style.display = 'none';
             document.getElementById('muteBtn').style.display = 'none';
             document.getElementById('endCallBtn').style.display = 'none';
             
             document.querySelector('.local-video-container').style.display = 'block';
             
+            if (callTimeout) {
+                clearTimeout(callTimeout);
+                callTimeout = null;
+            }
+            
             if (currentCall && ws?.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
-                    type: "call_end",
-                    to: currentCall
+                    type: "end_call",
+                    to: currentChat,
+                    call_id: currentCall
                 }));
             }
             
@@ -1433,15 +1542,11 @@ const SERVER_URL = (() => {
                     track.enabled = !isMuted;
                 });
                 
-                const muteBtn = document.querySelector('#muteBtn i');
-                if (muteBtn) {
-                    muteBtn.className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
-                }
-                
-                const callMuteBtn = document.querySelector('.call-btn.mute i');
-                if (callMuteBtn) {
-                    callMuteBtn.className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
-                }
+                // Обновляем иконки
+                const icons = document.querySelectorAll('.fa-microphone, .fa-microphone-slash');
+                icons.forEach(icon => {
+                    icon.className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+                });
             }
         }
 
@@ -1478,6 +1583,13 @@ const SERVER_URL = (() => {
 
         // ============ ФОКУС ПРИ ЗАГРУЗКЕ ============
         document.getElementById('username').focus();
+
+        // ============ ОБРАБОТКА ЗАКРЫТИЯ СТРАНИЦЫ ============
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
     </script>
 </body>
 </html>
