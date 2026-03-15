@@ -1,11 +1,22 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+# server_fixed.py
+import asyncio
 import json
-from typing import Dict
+import logging
+import os
+from datetime import datetime
+from typing import Dict, Set
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+import uvicorn
 
-app = FastAPI()
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+app = FastAPI(title="Limongram Messenger API")
+
+# Настройка CORS - разрешаем все источники для разработки
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,121 +25,248 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class ChatServer:
+class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
-        self.user_keys: Dict[str, str] = {}
-    
+        self.connection_users: Dict[WebSocket, str] = {}
+        self.user_keys: Dict[str, str] = {}  # Хранилище ключей шифрования
+
     async def connect(self, websocket: WebSocket, username: str):
         await websocket.accept()
         self.active_connections[username] = websocket
-        print(f"✅ {username} подключился")
+        self.connection_users[websocket] = username
         
-        # Отправляем список пользователей всем
+        logger.info(f"✅ User {username} connected")
+        
+        # Отправляем список пользователей новому пользователю
+        await self.send_user_list(username)
+        
+        # Уведомляем всех о новом пользователе
         await self.broadcast_user_list()
-    
-    async def disconnect(self, username: str):
-        if username in self.active_connections:
+
+    def disconnect(self, websocket: WebSocket):
+        username = self.connection_users.get(websocket)
+        if username:
             del self.active_connections[username]
+            del self.connection_users[websocket]
             if username in self.user_keys:
                 del self.user_keys[username]
-            print(f"❌ {username} отключился")
-            await self.broadcast_user_list()
-    
-    async def broadcast_user_list(self):
-        """Отправляем список пользователей ВСЕМ"""
-        users = list(self.active_connections.keys())
-        print(f"📢 Отправка списка пользователей: {users}")
-        
-        for username, connection in self.active_connections.items():
+            logger.info(f"❌ User {username} disconnected")
+            asyncio.create_task(self.broadcast_user_list())
+
+    async def send_to_user(self, message: dict, username: str):
+        if username in self.active_connections:
             try:
-                await connection.send_json({
-                    "type": "users",
-                    "users": users
-                })
-            except:
-                pass
-    
-    async def handle_key_exchange(self, from_user: str, key: str):
-        """Обработка обмена ключами"""
-        print(f"🔑 Получен ключ от {from_user}")
-        self.user_keys[from_user] = key
-        
-        # Пересылаем ключ ВСЕМ остальным пользователям
+                await self.active_connections[username].send_json(message)
+                return True
+            except Exception as e:
+                logger.error(f"Error sending message to {username}: {e}")
+        return False
+
+    async def broadcast(self, message: dict, exclude: str = None):
         for username, connection in self.active_connections.items():
-            if username != from_user:
-                try:
-                    await connection.send_json({
-                        "type": "key_exchange",
-                        "from": from_user,
-                        "key": key
-                    })
-                    print(f"📨 Ключ {from_user} отправлен {username}")
-                except:
-                    pass
-    
-    async def handle_encrypted_message(self, from_user: str, to_user: str, data: dict):
-        """Обработка зашифрованного сообщения"""
-        if to_user in self.active_connections:
-            await self.active_connections[to_user].send_json({
-                "type": "encrypted",
-                "from": from_user,
-                "data": data
+            if exclude and username == exclude:
+                continue
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error broadcasting to {username}: {e}")
+
+    async def broadcast_user_list(self):
+        users = list(self.active_connections.keys())
+        message = {
+            "type": "user_list",
+            "users": users,
+            "timestamp": datetime.now().isoformat()
+        }
+        await self.broadcast(message)
+
+    async def send_user_list(self, username: str):
+        """Отправляет список пользователей конкретному пользователю"""
+        users = list(self.active_connections.keys())
+        message = {
+            "type": "user_list",
+            "users": users,
+            "timestamp": datetime.now().isoformat()
+        }
+        await self.send_to_user(message, username)
+
+manager = ConnectionManager()
+
+# Эндпоинт для проверки работы сервера
+@app.get("/")
+async def root():
+    return {
+        "message": "🍋 Limongram Server is running",
+        "status": "online",
+        "endpoints": {
+            "GET /": "This page",
+            "GET /health": "Health check",
+            "POST /register": "Register user (not used in this version)",
+            "POST /login": "Login user (not used in this version)",
+            "WS /ws/{username}": "WebSocket connection"
+        }
+    }
+
+# Эндпоинт для проверки здоровья
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "connections": len(manager.active_connections)
+    }
+
+# Эндпоинт для статического HTML (если нужно)
+@app.get("/app")
+async def get_app():
+    try:
+        if os.path.exists("index.html"):
+            with open("index.html", "r", encoding="utf-8") as f:
+                html_content = f.read()
+            return HTMLResponse(content=html_content)
+        else:
+            return JSONResponse({
+                "error": "index.html not found",
+                "message": "Please create index.html file"
             })
-            print(f"📨 Зашифрованное сообщение от {from_user} к {to_user}")
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
-chat = ChatServer()
-
+# WebSocket эндпоинт для обмена сообщениями
 @app.websocket("/ws/{username}")
 async def websocket_endpoint(websocket: WebSocket, username: str):
-    await chat.connect(websocket, username)
+    # Подключаем пользователя
+    await manager.connect(websocket, username)
     
     try:
         while True:
+            # Получаем сообщение от клиента
             data = await websocket.receive_json()
-            print(f"📥 Получено от {username}: {data.get('type', 'unknown')}")
+            logger.info(f"📨 Received from {username}: {data.get('type')}")
             
-            if data.get("type") == "key_exchange":
-                await chat.handle_key_exchange(username, data.get("key", ""))
+            # Обрабатываем разные типы сообщений
+            if data["type"] == "key_exchange":
+                # Сохраняем ключ шифрования пользователя
+                manager.user_keys[username] = data.get("key")
+                logger.info(f"🔑 Key received from {username}")
+                
+                # Отправляем подтверждение
+                await manager.send_to_user({
+                    "type": "key_exchange_ack",
+                    "status": "success"
+                }, username)
+                
+                # Отправляем ключ всем остальным пользователям
+                for user in manager.active_connections:
+                    if user != username and user in manager.user_keys:
+                        await manager.send_to_user({
+                            "type": "key_exchange",
+                            "from": username,
+                            "key": data.get("key")
+                        }, user)
             
-            elif data.get("type") == "encrypted":
-                await chat.handle_encrypted_message(
-                    username,
-                    data["to"],
-                    data["data"]
-                )
+            elif data["type"] == "encrypted":
+                # Пересылаем зашифрованное сообщение получателю
+                target = data.get("to")
+                if target:
+                    success = await manager.send_to_user({
+                        "type": "encrypted",
+                        "from": username,
+                        "data": data.get("data")
+                    }, target)
+                    
+                    if success:
+                        logger.info(f"🔐 Encrypted message from {username} to {target}")
+                    else:
+                        logger.warning(f"❌ Failed to send message to {target} - user offline")
             
-            elif data.get("type") == "get_users":
-                # Отправляем список конкретному пользователю
-                users = list(chat.active_connections.keys())
-                await websocket.send_json({
-                    "type": "users",
-                    "users": users
-                })
+            elif data["type"] == "message":
+                # Прямое сообщение (для совместимости)
+                target = data.get("to")
+                if target:
+                    await manager.send_to_user({
+                        "type": "message",
+                        "from": username,
+                        "content": data.get("content"),
+                        "timestamp": datetime.now().isoformat()
+                    }, target)
+            
+            elif data["type"] == "call_offer":
+                # Предложение звонка
+                target = data.get("to")
+                if target:
+                    logger.info(f"📞 Call offer from {username} to {target}")
+                    await manager.send_to_user({
+                        "type": "call_offer",
+                        "caller": username,
+                        "offer": data.get("offer"),
+                        "call_id": data.get("call_id", str(datetime.now().timestamp()))
+                    }, target)
+            
+            elif data["type"] == "call_answer":
+                # Ответ на звонок
+                target = data.get("to")
+                if target:
+                    logger.info(f"📞 Call answer from {username} to {target}")
+                    await manager.send_to_user({
+                        "type": "call_answer",
+                        "answer": data.get("answer"),
+                        "call_id": data.get("call_id")
+                    }, target)
+            
+            elif data["type"] == "ice_candidate":
+                # ICE кандидат для WebRTC
+                target = data.get("to")
+                if target:
+                    logger.info(f"❄️ ICE candidate from {username} to {target}")
+                    await manager.send_to_user({
+                        "type": "ice_candidate",
+                        "candidate": data.get("candidate"),
+                        "call_id": data.get("call_id")
+                    }, target)
+            
+            elif data["type"] == "end_call":
+                # Завершение звонка
+                target = data.get("to")
+                if target:
+                    logger.info(f"📞 Call ended from {username} to {target}")
+                    await manager.send_to_user({
+                        "type": "end_call",
+                        "call_id": data.get("call_id")
+                    }, target)
+            
+            elif data["type"] == "ping":
+                # Проверка соединения
+                await manager.send_to_user({
+                    "type": "pong",
+                    "timestamp": datetime.now().isoformat()
+                }, username)
     
     except WebSocketDisconnect:
-        await chat.disconnect(username)
+        manager.disconnect(websocket)
+        logger.info(f"User {username} disconnected from WebSocket")
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
-        await chat.disconnect(username)
+        logger.error(f"❌ WebSocket error for {username}: {e}")
+        manager.disconnect(websocket)
 
-@app.get("/")
-def home():
-    return {
-        "message": "Limongram Cloud Server 🍋",
-        "online": len(chat.active_connections),
-        "users": list(chat.active_connections.keys())
-    }
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "connections": len(chat.active_connections)}
+# Функция для запуска сервера
+def start_server():
+    """Запускает сервер на порту 8000"""
+    print("🍋 Limongram Server starting...")
+    print("📡 WebSocket endpoint: ws://localhost:8000/ws/{username}")
+    print("🌐 HTTP endpoint: http://localhost:8000")
+    print("🔍 Health check: http://localhost:8000/health")
+    print("📁 Static files: http://localhost:8000/app (if index.html exists)")
+    print("Press Ctrl+C to stop the server")
+    
+    uvicorn.run(
+        "server_fixed:app", 
+        host="0.0.0.0", 
+        port=8000, 
+        reload=True,
+        log_level="info"
+    )
 
 if __name__ == "__main__":
-    print("="*60)
-    print("🍋 LIMONGRAM CLOUD SERVER - FIXED VERSION")
-    print("="*60)
-    print("✅ Обработка ключей шифрования включена")
-    print("✅ Автоматическая рассылка списка пользователей")
-    print("="*60)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    start_server()
