@@ -916,8 +916,17 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
+        
         // ============ КОНФИГУРАЦИЯ ============
-        const SERVER_URL = "wss://limongram-messenger.onrender.com";
+// Автоматическое определение URL сервера
+const SERVER_URL = (() => {
+    // Если страница открыта локально (localhost или 127.0.0.1)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return "ws://localhost:8000";
+    }
+    // Если на Render.com или любом другом домене
+    return "wss://limongram-messenger.onrender.com";
+})();
         
         // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
         let ws = null;
