@@ -1115,7 +1115,6 @@
                         peerKeys[data.from] = data.key;
                         console.log(`🔑 Получен ключ от ${data.from}`);
                         
-                        showNotification(`🔑 Ключ от ${data.from}`, 'success');
                         updateUserList(onlineUsers);
                         
                         if (!peerKeys[myName]) {
