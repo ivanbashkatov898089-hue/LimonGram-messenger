@@ -13,7 +13,6 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         }
 
-        /* Светлая тема (по умолчанию) */
         :root {
             --primary: #25D366;
             --primary-dark: #128C7E;
@@ -35,7 +34,6 @@
             --input-bg: white;
         }
 
-        /* Темная тема */
         body.dark-theme {
             --primary: #00a884;
             --primary-dark: #008f72;
@@ -49,9 +47,6 @@
             --shadow: 0 2px 10px rgba(0,0,0,0.3);
             --border: #2a3942;
             --hover: #2a3942;
-            --danger: #f44336;
-            --success: #00a884;
-            --warning: #ff9800;
             --auth-bg: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
             --card-bg: #1f2c33;
             --input-bg: #2a3942;
@@ -63,8 +58,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 0;
-            margin: 0;
             transition: background 0.3s ease;
         }
 
@@ -512,14 +505,6 @@
             gap: 4px;
         }
 
-        .chat-header-text p i.fa-lock {
-            color: var(--success);
-        }
-
-        .chat-header-text p i.fa-exclamation-triangle {
-            color: var(--warning);
-        }
-
         .chat-actions {
             display: flex;
             gap: 8px;
@@ -614,6 +599,38 @@
             color: var(--text);
         }
 
+        .message-media {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 6px;
+            cursor: pointer;
+        }
+
+        .message-media video,
+        .message-media img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 12px;
+        }
+
+        .voice-message {
+            background: var(--message-out);
+            padding: 8px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-message i {
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .voice-message audio {
+            display: none;
+        }
+
         .message-meta {
             display: flex;
             align-items: center;
@@ -661,6 +678,22 @@
         .input-wrapper input:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary);
         }
 
         .send-btn {
@@ -951,7 +984,14 @@
 
                 <div class="input-area">
                     <div class="input-wrapper">
+                        <button class="icon-btn" id="mediaBtn" style="background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-plus-circle" style="font-size: 20px; color: var(--primary);"></i>
+                        </button>
                         <input type="text" id="messageInput" placeholder="Сообщение..." disabled>
+                        <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
+                        <button class="icon-btn" id="voiceCircleBtn" style="background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-microphone-alt" style="font-size: 18px; color: var(--primary);"></i>
+                        </button>
                     </div>
                     <button class="send-btn" onclick="sendMessage()" id="sendButton" disabled>
                         <i class="fas fa-paper-plane"></i>
@@ -993,7 +1033,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
         // ========== КОНФИГУРАЦИЯ ==========
-        // Автоматическое определение URL сервера
         const SERVER_URL = (() => {
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 return "ws://localhost:8000";
@@ -1001,7 +1040,6 @@
             return "wss://limongram-messenger.onrender.com";
         })();
 
-        // Показываем информацию о сервере
         document.getElementById('serverInfo').innerHTML = `🖥️ Сервер: ${SERVER_URL}`;
 
         // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
@@ -1014,7 +1052,6 @@
         let keyExchangeAttempts = 0;
         const MAX_KEY_ATTEMPTS = 3;
         
-        // Переменные для звонков
         let peerConnection = null;
         let localStream = null;
         let remoteStream = null;
@@ -1023,7 +1060,6 @@
         let isVideoEnabled = true;
         let callTimeout = null;
         
-        // STUN серверы
         const configuration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -1046,216 +1082,134 @@
             }
         }
 
-        // Загружаем сохраненную тему
         const savedTheme = localStorage.getItem('limongram-theme');
         if (savedTheme === 'dark') {
             document.body.classList.add('dark-theme');
             document.querySelector('#themeToggle i').className = 'fas fa-sun';
         }
 
-        // ========== ФУНКЦИИ ДЛЯ УВЕДОМЛЕНИЙ ==========
+        // ========== УВЕДОМЛЕНИЯ ==========
         function showNotification(text, type = 'info') {
             const notification = document.getElementById('notification');
             const notificationText = document.getElementById('notificationText');
-            
             notificationText.textContent = text;
             notification.className = 'notification';
-            
-            if (type === 'error') {
-                notification.classList.add('error');
-            } else if (type === 'success') {
-                notification.classList.add('success');
-            } else if (type === 'warning') {
-                notification.classList.add('warning');
-            }
-            
+            if (type === 'error') notification.classList.add('error');
+            else if (type === 'success') notification.classList.add('success');
+            else if (type === 'warning') notification.classList.add('warning');
             notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+            setTimeout(() => notification.classList.remove('show'), 3000);
         }
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
         }
 
-        // ========== ФУНКЦИИ ДЛЯ КЛЮЧЕЙ ШИФРОВАНИЯ ==========
+        // ========== КЛЮЧИ ==========
         function generateEncryptionKey() {
             return CryptoJS.lib.WordArray.random(32).toString();
         }
 
         function broadcastMyKey() {
             if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-            
-            ws.send(JSON.stringify({
-                type: "key_exchange",
-                key: myKey
-            }));
-            
-            console.log("🔑 Ключ отправлен всем пользователям");
+            ws.send(JSON.stringify({ type: "key_exchange", key: myKey }));
             return true;
         }
 
         function sendKeyToUser(username) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-            
-            ws.send(JSON.stringify({
-                type: "key_exchange",
-                to: username,
-                key: myKey
-            }));
-            
-            console.log(`🔑 Ключ отправлен пользователю ${username}`);
+            ws.send(JSON.stringify({ type: "key_exchange", to: username, key: myKey }));
             return true;
         }
 
         function requestKeyFromUser(username) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-            
-            ws.send(JSON.stringify({
-                type: "key_request",
-                to: username
-            }));
-            
-            console.log(`🔑 Запрос ключа у ${username}`);
+            ws.send(JSON.stringify({ type: "key_request", to: username }));
             return true;
         }
 
         function checkAllKeys() {
             const otherUsers = onlineUsers.filter(u => u !== myName);
             const missingKeys = otherUsers.filter(u => !peerKeys[u]);
-            
             if (missingKeys.length > 0) {
-                console.log(`⚠️ Отсутствуют ключи для: ${missingKeys.join(', ')}`);
-                missingKeys.forEach(user => {
-                    requestKeyFromUser(user);
-                });
+                missingKeys.forEach(user => requestKeyFromUser(user));
                 return false;
             }
-            
-            console.log("✅ Все ключи получены");
             return true;
         }
 
-        function retryKeyExchange() {
-            if (keyExchangeAttempts >= MAX_KEY_ATTEMPTS) {
-                console.log("❌ Достигнут лимит попыток обмена ключами");
-                showNotification("⚠️ Проблема с ключами шифрования", 'warning');
-                return;
-            }
-            
-            keyExchangeAttempts++;
-            console.log(`🔄 Попытка обмена ключами #${keyExchangeAttempts}`);
-            
-            broadcastMyKey();
-            
-            setTimeout(() => {
-                if (!checkAllKeys()) {
-                    retryKeyExchange();
-                }
-            }, 1000);
-        }
-
-        // ========== ПОДКЛЮЧЕНИЕ К СЕРВЕРУ ==========
+        // ========== ПОДКЛЮЧЕНИЕ ==========
         function connect() {
             myName = document.getElementById('username').value.trim();
-            
             if (!myName) {
                 showNotification('Введите имя!', 'error');
                 return;
             }
 
             myKey = generateEncryptionKey();
-            console.log("🔑 Сгенерирован ключ:", myKey);
-
-            document.getElementById('connectionStatus').innerHTML = `
-                <span class="online-dot"></span>
-                <span>Подключение...</span>
-            `;
+            document.getElementById('connectionStatus').innerHTML = `<span class="online-dot"></span><span>Подключение...</span>`;
 
             try {
                 ws = new WebSocket(`${SERVER_URL}/ws/${myName}`);
 
                 ws.onopen = () => {
-                    console.log('✅ Подключено к серверу');
-                    
                     keyExchangeAttempts = 0;
-                    
-                    setTimeout(() => {
-                        broadcastMyKey();
-                    }, 500);
-                    
+                    setTimeout(() => broadcastMyKey(), 500);
                     document.getElementById('authScreen').style.display = 'none';
                     document.getElementById('mainScreen').style.display = 'flex';
-                    
                     document.getElementById('userAvatar').textContent = myName.charAt(0).toUpperCase();
                     document.getElementById('userName').textContent = myName;
-
-                    document.getElementById('connectionStatus').innerHTML = `
-                        <span class="online-dot"></span>
-                        <span>${myName}</span>
-                    `;
-
+                    document.getElementById('connectionStatus').innerHTML = `<span class="online-dot"></span><span>${myName}</span>`;
                     showNotification(`✅ Добро пожаловать, ${myName}!`, 'success');
                 };
 
                 ws.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    console.log('📨 Получено:', data.type, data.from || '');
 
                     if (data.type === 'user_list') {
                         onlineUsers = data.users;
                         updateUserList(data.users);
-                        
-                        setTimeout(() => {
-                            checkAllKeys();
-                        }, 500);
+                        setTimeout(() => checkAllKeys(), 500);
                     }
                     else if (data.type === 'key_exchange') {
                         peerKeys[data.from] = data.key;
-                        console.log(`🔑 Получен ключ от ${data.from}`);
-                        
                         showNotification(`🔑 Ключ от ${data.from}`, 'success');
                         updateUserList(onlineUsers);
-                        
-                        if (!peerKeys[myName]) {
-                            sendKeyToUser(data.from);
-                        }
-                        
+                        if (!peerKeys[myName]) sendKeyToUser(data.from);
                         checkAllKeys();
-                        
-                        if (currentChat === data.from) {
-                            updateChatStatus();
-                        }
+                        if (currentChat === data.from) updateChatStatus();
                     }
                     else if (data.type === 'key_request') {
-                        console.log(`🔑 Запрос ключа от ${data.from}`);
                         sendKeyToUser(data.from);
-                    }
-                    else if (data.type === 'key_exchange_ack') {
-                        console.log('✅ Ключ доставлен');
                     }
                     else if (data.type === 'encrypted') {
                         try {
-                            const decrypted = CryptoJS.AES.decrypt(
-                                data.data.ciphertext,
-                                myKey,
-                                { iv: CryptoJS.enc.Hex.parse(data.data.iv) }
-                            ).toString(CryptoJS.enc.Utf8);
-
+                            const decrypted = CryptoJS.AES.decrypt(data.data.ciphertext, myKey, { iv: CryptoJS.enc.Hex.parse(data.data.iv) }).toString(CryptoJS.enc.Utf8);
                             if (decrypted) {
                                 addMessage(data.from, decrypted, true);
                                 updateLastMessage(data.from, decrypted);
                             }
                         } catch (e) {
-                            console.error('❌ Ошибка расшифровки:', e);
-                            
                             if (peerKeys[data.from]) {
                                 delete peerKeys[data.from];
                                 requestKeyFromUser(data.from);
-                                showNotification('⚠️ Ошибка ключа, запрашиваю новый', 'warning');
+                                showNotification('⚠️ Ошибка ключа', 'warning');
                             }
+                        }
+                    }
+                    else if (data.type === 'media' || data.type === 'voice') {
+                        try {
+                            const decrypted = CryptoJS.AES.decrypt(data.data.ciphertext, myKey, { iv: CryptoJS.enc.Hex.parse(data.data.iv) }).toString(CryptoJS.enc.Utf8);
+                            if (decrypted) {
+                                if (data.type === 'media') {
+                                    addMediaMessage(data.from, decrypted, data.data.mime?.startsWith('image') || false, true);
+                                } else {
+                                    addVoiceMessage(data.from, decrypted, true);
+                                }
+                                updateLastMessage(data.from, data.type === 'media' ? '📎 Медиа' : '🎙 Кружок');
+                            }
+                        } catch (e) {
+                            console.error('Ошибка расшифровки медиа:', e);
                         }
                     }
                     else if (data.type === 'call_offer') {
@@ -1273,96 +1227,57 @@
                 };
 
                 ws.onclose = () => {
-                    document.getElementById('connectionStatus').innerHTML = `
-                        <span style="color: #f87171;">●</span> Отключено
-                    `;
+                    document.getElementById('connectionStatus').innerHTML = `<span style="color: #f87171;">●</span> Отключено`;
                     showNotification('❌ Соединение потеряно', 'error');
-                    
                     peerKeys = {};
-                    
-                    setTimeout(() => {
-                        if (myName) {
-                            connect();
-                        }
-                    }, 3000);
+                    setTimeout(() => { if (myName) connect(); }, 3000);
                 };
 
-                ws.onerror = (error) => {
-                    console.error('❌ Ошибка WebSocket:', error);
-                    showNotification('❌ Ошибка соединения', 'error');
-                };
-
+                ws.onerror = () => showNotification('❌ Ошибка соединения', 'error');
             } catch (error) {
-                console.error('Connection error:', error);
                 showNotification('❌ Не удалось подключиться', 'error');
             }
         }
 
-        // ========== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ==========
+        // ========== UI ==========
         function updateUserList(users) {
             const userList = document.getElementById('userList');
             userList.innerHTML = '';
-
             const otherUsers = users.filter(u => u !== myName);
-
             if (otherUsers.length === 0) {
-                userList.innerHTML = `
-                    <div style="text-align: center; padding: 30px; color: var(--text-light);">
-                        <i class="fas fa-users" style="font-size: 30px; opacity: 0.5;"></i>
-                        <p>Нет пользователей в сети</p>
-                    </div>
-                `;
+                userList.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-light);"><i class="fas fa-users" style="font-size: 30px;"></i><p>Нет пользователей в сети</p></div>`;
                 return;
             }
-
             otherUsers.forEach(user => {
                 const hasKey = peerKeys[user];
-                
                 const div = document.createElement('div');
                 div.className = `chat-item ${currentChat === user ? 'active' : ''}`;
                 div.onclick = () => selectChat(user);
-                
                 div.innerHTML = `
                     <div class="chat-avatar online">${user.charAt(0).toUpperCase()}</div>
                     <div class="chat-info">
-                        <div class="chat-name">
-                            ${user}
-                            ${hasKey ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-exclamation-triangle"></i>'}
-                        </div>
-                        <div class="chat-preview" id="preview-${user}">
-                            ${hasKey ? 'Защищено' : 'Нет ключа'}
-                        </div>
+                        <div class="chat-name">${user} ${hasKey ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-exclamation-triangle"></i>'}</div>
+                        <div class="chat-preview" id="preview-${user}">${hasKey ? 'Защищено' : 'Нет ключа'}</div>
                     </div>
                     <div class="chat-time" id="time-${user}"></div>
                 `;
-                
                 userList.appendChild(div);
             });
         }
 
         function selectChat(user) {
             currentChat = user;
-            
             document.getElementById('chatAvatar').textContent = user.charAt(0).toUpperCase();
             document.getElementById('chatName').textContent = user;
-            
             updateChatStatus();
-            
-            document.querySelectorAll('.chat-item').forEach(item => {
-                item.classList.remove('active');
-                if (item.querySelector('.chat-name').textContent.trim() === user) {
-                    item.classList.add('active');
-                }
-            });
-
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.remove('active');
-            }
+            document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+            const activeItem = Array.from(document.querySelectorAll('.chat-item')).find(item => item.querySelector('.chat-name').textContent.trim() === user);
+            if (activeItem) activeItem.classList.add('active');
+            if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('active');
         }
 
         function updateChatStatus() {
             const hasKey = peerKeys[currentChat];
-            
             if (hasKey) {
                 document.getElementById('chatStatus').innerHTML = '<i class="fas fa-lock" style="color: var(--success);"></i> Защищено';
                 document.getElementById('messageInput').disabled = false;
@@ -1375,7 +1290,6 @@
                 document.getElementById('sendButton').disabled = true;
                 document.getElementById('videoCallBtn').disabled = true;
                 document.getElementById('audioCallBtn').disabled = true;
-                
                 requestKeyFromUser(currentChat);
             }
         }
@@ -1383,79 +1297,35 @@
         function updateLastMessage(user, text) {
             const preview = document.getElementById(`preview-${user}`);
             const time = document.getElementById(`time-${user}`);
-            
-            if (preview) {
-                preview.textContent = text.length > 25 ? text.substring(0, 25) + '...' : text;
-            }
+            if (preview) preview.textContent = text.length > 25 ? text.substring(0, 25) + '...' : text;
             if (time) {
                 const now = new Date();
-                time.textContent = now.getHours().toString().padStart(2,'0') + ':' + 
-                                 now.getMinutes().toString().padStart(2,'0');
+                time.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
             }
         }
 
-        // ========== ОТПРАВКА СООБЩЕНИЙ ==========
+        // ========== СООБЩЕНИЯ ==========
         function sendMessage() {
-            if (!currentChat) {
-                showNotification('Выберите собеседника!', 'error');
-                return;
-            }
-
+            if (!currentChat) { showNotification('Выберите собеседника!', 'error'); return; }
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
-
             if (!message) return;
-
             const peerKey = peerKeys[currentChat];
-            if (!peerKey) {
-                showNotification('⌛ Нет ключа шифрования!', 'warning');
-                requestKeyFromUser(currentChat);
-                return;
-            }
-
-            try {
-                const iv = CryptoJS.lib.WordArray.random(16);
-                const encrypted = CryptoJS.AES.encrypt(message, peerKey, {
-                    iv: iv,
-                    mode: CryptoJS.mode.CBC,
-                    padding: CryptoJS.pad.Pkcs7
-                });
-
-                ws.send(JSON.stringify({
-                    type: "encrypted",
-                    to: currentChat,
-                    data: {
-                        ciphertext: encrypted.toString(),
-                        iv: iv.toString()
-                    }
-                }));
-
-                addMessage(`Вы`, message, false);
-                updateLastMessage(currentChat, message);
-                
-                input.value = '';
-            } catch (error) {
-                console.error('Ошибка шифрования:', error);
-                showNotification('❌ Ошибка шифрования', 'error');
-            }
+            if (!peerKey) { showNotification('⌛ Нет ключа!', 'warning'); requestKeyFromUser(currentChat); return; }
+            const iv = CryptoJS.lib.WordArray.random(16);
+            const encrypted = CryptoJS.AES.encrypt(message, peerKey, { iv, mode: CryptoJS.mode.CBC });
+            ws.send(JSON.stringify({ type: "encrypted", to: currentChat, data: { ciphertext: encrypted.toString(), iv: iv.toString() } }));
+            addMessage(`Вы`, message, false);
+            updateLastMessage(currentChat, message);
+            input.value = '';
         }
 
         function addMessage(sender, text, incoming) {
             const messages = document.getElementById('messages');
-            
             const div = document.createElement('div');
             div.className = `message ${incoming ? 'incoming' : 'outgoing'}`;
-            
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            div.innerHTML = `
-                ${incoming ? `<div class="message-sender">${sender}</div>` : ''}
-                <div class="message-text">${escapeHtml(text)}</div>
-                <div class="message-meta">
-                    ${time} <i class="fas fa-lock"></i>
-                </div>
-            `;
-            
+            div.innerHTML = `${incoming ? `<div class="message-sender">${sender}</div>` : ''}<div class="message-text">${escapeHtml(text)}</div><div class="message-meta">${time} <i class="fas fa-lock"></i></div>`;
             messages.appendChild(div);
             messages.scrollTop = messages.scrollHeight;
         }
@@ -1466,373 +1336,122 @@
             return div.innerHTML;
         }
 
-        // ========== ФУНКЦИИ ЗВОНКОВ ==========
-        async function startVideoCall() {
-            if (!currentChat) {
-                showNotification('Выберите собеседника!', 'error');
-                return;
-            }
-            
-            if (!peerKeys[currentChat]) {
-                showNotification('⌛ Нет ключа шифрования!', 'warning');
-                return;
-            }
-            
-            try {
-                showNotification('📹 Запрашиваю камеру...', 'info');
-                
-                // Для мобильных устройств нужно явно запрашивать разрешения
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: 'user'
-                    }, 
-                    audio: true 
+        // ========== МЕДИА ==========
+        const mediaBtn = document.getElementById('mediaBtn');
+        const fileInput = document.getElementById('fileInput');
+        const voiceCircleBtn = document.getElementById('voiceCircleBtn');
+        let mediaRecorder;
+        let audioChunks = [];
+
+        mediaBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const mediaData = ev.target.result;
+                const type = file.type.startsWith('image') ? 'image' : 'video';
+                const peerKey = peerKeys[currentChat];
+                if (!peerKey) return showNotification('Нет ключа!', 'warning');
+                const iv = CryptoJS.lib.WordArray.random(16);
+                const encrypted = CryptoJS.AES.encrypt(mediaData, peerKey, { iv, mode: CryptoJS.mode.CBC });
+                ws.send(JSON.stringify({ type: "media", to: currentChat, data: { ciphertext: encrypted.toString(), iv: iv.toString(), mime: file.type, name: file.name, size: file.size } }));
+                addMediaMessage('Вы', mediaData, type === 'image', false);
+                fileInput.value = '';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        voiceCircleBtn.addEventListener('mousedown', startRecording);
+        voiceCircleBtn.addEventListener('mouseup', stopRecording);
+        voiceCircleBtn.addEventListener('mouseleave', stopRecording);
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onload = ev => {
+                            const audioData = ev.target.result;
+                            const peerKey = peerKeys[currentChat];
+                            if (!peerKey) return;
+                            const iv = CryptoJS.lib.WordArray.random(16);
+                            const encrypted = CryptoJS.AES.encrypt(audioData, peerKey, { iv });
+                            ws.send(JSON.stringify({ type: "voice", to: currentChat, data: { ciphertext: encrypted.toString(), iv: iv.toString(), duration: '⏺' } }));
+                            addVoiceMessage('Вы', audioData, false);
+                        };
+                        reader.readAsDataURL(audioBlob);
+                        stream.getTracks().forEach(t => t.stop());
+                    };
+                    showNotification('🎙 Говорите...', 'info');
                 });
-                
-                document.getElementById('localVideo').srcObject = localStream;
-                document.getElementById('callContainer').style.display = 'block';
-                document.getElementById('callPartner').textContent = currentChat;
-                document.getElementById('callStatus').innerHTML = '⏳ Звонок...';
-                
-                document.getElementById('muteBtn').style.display = 'inline-flex';
-                document.getElementById('endCallBtn').style.display = 'inline-flex';
-                
-                peerConnection = new RTCPeerConnection(configuration);
-                
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-                
-                peerConnection.ontrack = (event) => {
-                    remoteStream = event.streams[0];
-                    document.getElementById('remoteVideo').srcObject = remoteStream;
-                    document.getElementById('callStatus').innerHTML = '📞 В разговоре';
-                };
-                
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate && ws?.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({
-                            type: "ice_candidate",
-                            to: currentChat,
-                            candidate: event.candidate,
-                            call_id: currentCall
-                        }));
-                    }
-                };
-                
-                const offer = await peerConnection.createOffer({
-                    offerToReceiveAudio: true,
-                    offerToReceiveVideo: true
-                });
-                await peerConnection.setLocalDescription(offer);
-                
-                currentCall = Date.now().toString();
-                
-                ws.send(JSON.stringify({
-                    type: "call_offer",
-                    to: currentChat,
-                    offer: peerConnection.localDescription,
-                    caller: myName,
-                    call_id: currentCall
-                }));
-                
-                callTimeout = setTimeout(() => {
-                    if (currentCall) {
-                        showNotification('⏰ Собеседник не отвечает', 'warning');
-                        endCall();
-                    }
-                }, 30000);
-                
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showNotification('❌ Нет доступа к камере. Проверьте разрешения!', 'error');
-                endCall();
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                showNotification('✅ Кружок отправлен', 'success');
             }
         }
 
-        async function startAudioCall() {
-            if (!currentChat) {
-                showNotification('Выберите собеседника!', 'error');
-                return;
-            }
-            
-            if (!peerKeys[currentChat]) {
-                showNotification('⌛ Нет ключа шифрования!', 'warning');
-                return;
-            }
-            
-            try {
-                showNotification('🎤 Запрашиваю микрофон...', 'info');
-                
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: false, 
-                    audio: true 
-                });
-                
-                document.getElementById('callContainer').style.display = 'block';
-                document.getElementById('callPartner').textContent = currentChat;
-                document.getElementById('callStatus').innerHTML = '⏳ Аудиозвонок...';
-                
-                document.querySelector('.local-video-container').style.display = 'none';
-                
-                document.getElementById('muteBtn').style.display = 'inline-flex';
-                document.getElementById('endCallBtn').style.display = 'inline-flex';
-                
-                peerConnection = new RTCPeerConnection(configuration);
-                
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-                
-                peerConnection.ontrack = (event) => {
-                    remoteStream = event.streams[0];
-                    document.getElementById('callStatus').innerHTML = '📞 В разговоре';
-                };
-                
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate && ws?.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({
-                            type: "ice_candidate",
-                            to: currentChat,
-                            candidate: event.candidate,
-                            call_id: currentCall
-                        }));
-                    }
-                };
-                
-                const offer = await peerConnection.createOffer({
-                    offerToReceiveAudio: true,
-                    offerToReceiveVideo: false
-                });
-                await peerConnection.setLocalDescription(offer);
-                
-                currentCall = Date.now().toString();
-                
-                ws.send(JSON.stringify({
-                    type: "call_offer",
-                    to: currentChat,
-                    offer: peerConnection.localDescription,
-                    caller: myName,
-                    call_id: currentCall
-                }));
-                
-                callTimeout = setTimeout(() => {
-                    if (currentCall) {
-                        showNotification('⏰ Собеседник не отвечает', 'warning');
-                        endCall();
-                    }
-                }, 30000);
-                
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showNotification('❌ Нет доступа к микрофону. Проверьте разрешения!', 'error');
-                endCall();
-            }
+        function addMediaMessage(sender, dataUrl, isImage, incoming) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = `message ${incoming ? 'incoming' : 'outgoing'}`;
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            div.innerHTML = `
+                ${incoming ? `<div class="message-sender">${sender}</div>` : ''}
+                <div class="message-media">
+                    ${isImage ? `<img src="${dataUrl}" onclick="window.open('${dataUrl}')">` : `<video src="${dataUrl}" controls preload="metadata" style="max-width:200px; border-radius:12px;"></video>`}
+                </div>
+                <div class="message-meta">${time} <i class="fas fa-lock"></i></div>
+            `;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
         }
 
-        function handleIncomingCall(caller, offer, callId) {
-            if (currentCall) {
-                ws.send(JSON.stringify({
-                    type: "end_call",
-                    to: caller,
-                    call_id: callId
-                }));
-                return;
-            }
-            
-            if (confirm(`📞 Входящий звонок от ${caller}! Принять?`)) {
-                acceptCall(offer, caller, callId);
-            } else {
-                ws.send(JSON.stringify({
-                    type: "end_call",
-                    to: caller,
-                    call_id: callId
-                }));
-            }
+        function addVoiceMessage(sender, dataUrl, incoming) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = `message ${incoming ? 'incoming' : 'outgoing'}`;
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            div.innerHTML = `
+                ${incoming ? `<div class="message-sender">${sender}</div>` : ''}
+                <div class="voice-message">
+                    <i class="fas fa-play-circle" onclick="this.nextElementSibling.play()"></i>
+                    <audio src="${dataUrl}" style="display:none;"></audio>
+                    <span>🎙 Кружок</span>
+                </div>
+                <div class="message-meta">${time} <i class="fas fa-lock"></i></div>
+            `;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
         }
 
-        async function acceptCall(offer, caller, callId) {
-            try {
-                currentCall = callId;
-                
-                if (!localStream) {
-                    localStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: true, 
-                        audio: true 
-                    });
-                }
-                
-                document.getElementById('localVideo').srcObject = localStream;
-                document.getElementById('callContainer').style.display = 'block';
-                document.getElementById('callPartner').textContent = caller;
-                document.getElementById('callStatus').innerHTML = '📞 Принятие...';
-                
-                document.querySelector('.local-video-container').style.display = 'block';
-                document.getElementById('muteBtn').style.display = 'inline-flex';
-                document.getElementById('endCallBtn').style.display = 'inline-flex';
-                
-                peerConnection = new RTCPeerConnection(configuration);
-                
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-                
-                peerConnection.ontrack = (event) => {
-                    remoteStream = event.streams[0];
-                    document.getElementById('remoteVideo').srcObject = remoteStream;
-                    document.getElementById('callStatus').innerHTML = '📞 В разговоре';
-                };
-                
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate && ws?.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({
-                            type: "ice_candidate",
-                            to: caller,
-                            candidate: event.candidate,
-                            call_id: currentCall
-                        }));
-                    }
-                };
-                
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                
-                ws.send(JSON.stringify({
-                    type: "call_answer",
-                    to: caller,
-                    answer: peerConnection.localDescription,
-                    call_id: currentCall
-                }));
-                
-                if (callTimeout) {
-                    clearTimeout(callTimeout);
-                    callTimeout = null;
-                }
-                
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showNotification('❌ Ошибка приема звонка', 'error');
-                endCall();
-            }
-        }
-
-        function handleCallAnswer(answer, callId) {
-            if (peerConnection && currentCall === callId) {
-                peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
-                    .then(() => {
-                        document.getElementById('callStatus').innerHTML = '📞 В разговоре';
-                        if (callTimeout) {
-                            clearTimeout(callTimeout);
-                            callTimeout = null;
-                        }
-                    })
-                    .catch(error => console.error('Error setting remote description:', error));
-            }
-        }
-
-        function handleIceCandidate(candidate, callId) {
-            if (peerConnection && currentCall === callId) {
-                peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
-                    .catch(error => console.error('Error adding ICE candidate:', error));
-            }
-        }
-
-        function handleCallEnd() {
-            endCall();
-            showNotification('📞 Звонок завершен', 'info');
-        }
-
-        function endCall() {
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-            
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            
-            if (remoteStream) {
-                remoteStream.getTracks().forEach(track => track.stop());
-                remoteStream = null;
-            }
-            
-            document.getElementById('callContainer').style.display = 'none';
-            document.getElementById('muteBtn').style.display = 'none';
-            document.getElementById('endCallBtn').style.display = 'none';
-            
-            document.querySelector('.local-video-container').style.display = 'block';
-            
-            if (callTimeout) {
-                clearTimeout(callTimeout);
-                callTimeout = null;
-            }
-            
-            if (currentCall && ws?.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: "end_call",
-                    to: currentChat,
-                    call_id: currentCall
-                }));
-            }
-            
-            currentCall = null;
-        }
-
-        function toggleMute() {
-            if (localStream) {
-                isMuted = !isMuted;
-                localStream.getAudioTracks().forEach(track => {
-                    track.enabled = !isMuted;
-                });
-                
-                const icons = document.querySelectorAll('.fa-microphone, .fa-microphone-slash');
-                icons.forEach(icon => {
-                    icon.className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
-                });
-            }
-        }
-
-        function toggleCamera() {
-            if (localStream) {
-                isVideoEnabled = !isVideoEnabled;
-                localStream.getVideoTracks().forEach(track => {
-                    track.enabled = isVideoEnabled;
-                });
-                
-                const cameraBtn = document.querySelector('.call-btn.video i');
-                if (cameraBtn) {
-                    cameraBtn.className = isVideoEnabled ? 'fas fa-video' : 'fas fa-video-slash';
-                }
-            }
-        }
+        // ========== ЗВОНКИ ==========
+        async function startVideoCall() { if (!currentChat || !peerKeys[currentChat]) return; try { localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true }); document.getElementById('localVideo').srcObject = localStream; document.getElementById('callContainer').style.display = 'block'; document.getElementById('callPartner').textContent = currentChat; document.getElementById('callStatus').innerHTML = '⏳ Звонок...'; document.getElementById('muteBtn').style.display = 'inline-flex'; document.getElementById('endCallBtn').style.display = 'inline-flex'; peerConnection = new RTCPeerConnection(configuration); localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream)); peerConnection.ontrack = (event) => { remoteStream = event.streams[0]; document.getElementById('remoteVideo').srcObject = remoteStream; document.getElementById('callStatus').innerHTML = '📞 В разговоре'; }; peerConnection.onicecandidate = (event) => { if (event.candidate && ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "ice_candidate", to: currentChat, candidate: event.candidate, call_id: currentCall })); }; const offer = await peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true }); await peerConnection.setLocalDescription(offer); currentCall = Date.now().toString(); ws.send(JSON.stringify({ type: "call_offer", to: currentChat, offer: peerConnection.localDescription, caller: myName, call_id: currentCall })); callTimeout = setTimeout(() => { if (currentCall) { showNotification('⏰ Собеседник не отвечает', 'warning'); endCall(); } }, 30000); } catch (error) { showNotification('❌ Нет доступа к камере', 'error'); endCall(); } }
+        async function startAudioCall() { if (!currentChat || !peerKeys[currentChat]) return; try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); document.getElementById('callContainer').style.display = 'block'; document.getElementById('callPartner').textContent = currentChat; document.getElementById('callStatus').innerHTML = '⏳ Аудиозвонок...'; document.querySelector('.local-video-container').style.display = 'none'; document.getElementById('muteBtn').style.display = 'inline-flex'; document.getElementById('endCallBtn').style.display = 'inline-flex'; peerConnection = new RTCPeerConnection(configuration); localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream)); peerConnection.ontrack = (event) => { remoteStream = event.streams[0]; document.getElementById('callStatus').innerHTML = '📞 В разговоре'; }; peerConnection.onicecandidate = (event) => { if (event.candidate && ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "ice_candidate", to: currentChat, candidate: event.candidate, call_id: currentCall })); }; const offer = await peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: false }); await peerConnection.setLocalDescription(offer); currentCall = Date.now().toString(); ws.send(JSON.stringify({ type: "call_offer", to: currentChat, offer: peerConnection.localDescription, caller: myName, call_id: currentCall })); callTimeout = setTimeout(() => { if (currentCall) { showNotification('⏰ Собеседник не отвечает', 'warning'); endCall(); } }, 30000); } catch (error) { showNotification('❌ Нет доступа к микрофону', 'error'); endCall(); } }
+        function handleIncomingCall(caller, offer, callId) { if (currentCall) { ws.send(JSON.stringify({ type: "end_call", to: caller, call_id: callId })); return; } if (confirm(`📞 Входящий звонок от ${caller}! Принять?`)) acceptCall(offer, caller, callId); else ws.send(JSON.stringify({ type: "end_call", to: caller, call_id: callId })); }
+        async function acceptCall(offer, caller, callId) { try { currentCall = callId; if (!localStream) localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); document.getElementById('localVideo').srcObject = localStream; document.getElementById('callContainer').style.display = 'block'; document.getElementById('callPartner').textContent = caller; document.getElementById('callStatus').innerHTML = '📞 Принятие...'; document.querySelector('.local-video-container').style.display = 'block'; document.getElementById('muteBtn').style.display = 'inline-flex'; document.getElementById('endCallBtn').style.display = 'inline-flex'; peerConnection = new RTCPeerConnection(configuration); localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream)); peerConnection.ontrack = (event) => { remoteStream = event.streams[0]; document.getElementById('remoteVideo').srcObject = remoteStream; document.getElementById('callStatus').innerHTML = '📞 В разговоре'; }; peerConnection.onicecandidate = (event) => { if (event.candidate && ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "ice_candidate", to: caller, candidate: event.candidate, call_id: currentCall })); }; await peerConnection.setRemoteDescription(new RTCSessionDescription(offer)); const answer = await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer); ws.send(JSON.stringify({ type: "call_answer", to: caller, answer: peerConnection.localDescription, call_id: currentCall })); if (callTimeout) clearTimeout(callTimeout); } catch (error) { showNotification('❌ Ошибка приема звонка', 'error'); endCall(); } }
+        function handleCallAnswer(answer, callId) { if (peerConnection && currentCall === callId) { peerConnection.setRemoteDescription(new RTCSessionDescription(answer)).then(() => { document.getElementById('callStatus').innerHTML = '📞 В разговоре'; if (callTimeout) clearTimeout(callTimeout); }); } }
+        function handleIceCandidate(candidate, callId) { if (peerConnection && currentCall === callId) peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); }
+        function handleCallEnd() { endCall(); showNotification('📞 Звонок завершен', 'info'); }
+        function endCall() { if (peerConnection) peerConnection.close(); if (localStream) localStream.getTracks().forEach(track => track.stop()); if (remoteStream) remoteStream.getTracks().forEach(track => track.stop()); document.getElementById('callContainer').style.display = 'none'; document.getElementById('muteBtn').style.display = 'none'; document.getElementById('endCallBtn').style.display = 'none'; document.querySelector('.local-video-container').style.display = 'block'; if (callTimeout) clearTimeout(callTimeout); if (currentCall && ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "end_call", to: currentChat, call_id: currentCall })); currentCall = null; localStream = null; remoteStream = null; peerConnection = null; }
+        function toggleMute() { if (localStream) { isMuted = !isMuted; localStream.getAudioTracks().forEach(track => track.enabled = !isMuted); document.querySelectorAll('.fa-microphone, .fa-microphone-slash').forEach(icon => icon.className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone'); } }
+        function toggleCamera() { if (localStream) { isVideoEnabled = !isVideoEnabled; localStream.getVideoTracks().forEach(track => track.enabled = isVideoEnabled); const camIcon = document.querySelector('.call-btn.video i'); if (camIcon) camIcon.className = isVideoEnabled ? 'fas fa-video' : 'fas fa-video-slash'; } }
 
         // ========== ИНИЦИАЛИЗАЦИЯ ==========
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('username').focus();
-            
-            document.getElementById('username').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') connect();
-            });
-            
-            document.getElementById('messageInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
-            
-            document.getElementById('searchChats').addEventListener('input', (e) => {
-                const search = e.target.value.toLowerCase();
-                document.querySelectorAll('.chat-item').forEach(item => {
-                    const name = item.querySelector('.chat-name').textContent.toLowerCase();
-                    item.style.display = name.includes(search) ? 'flex' : 'none';
-                });
-            });
+            document.getElementById('username').addEventListener('keypress', (e) => { if (e.key === 'Enter') connect(); });
+            document.getElementById('messageInput').addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+            document.getElementById('searchChats').addEventListener('input', (e) => { const search = e.target.value.toLowerCase(); document.querySelectorAll('.chat-item').forEach(item => { const name = item.querySelector('.chat-name').textContent.toLowerCase(); item.style.display = name.includes(search) ? 'flex' : 'none'; }); });
         });
     </script>
 </body>
