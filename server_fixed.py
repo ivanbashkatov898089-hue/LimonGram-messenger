@@ -29,7 +29,7 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.connection_users: Dict[WebSocket, str] = {}
-        self.user_keys: Dict[str, str] = {}  # Хранилище ключей шифрования
+        self.user_public_keys: Dict[str, dict] = {}
 
     async def connect(self, websocket: WebSocket, username: str):
         await websocket.accept()
@@ -45,14 +45,16 @@ class ConnectionManager:
         await self.broadcast_user_list()
 
     def disconnect(self, websocket: WebSocket):
-        username = self.connection_users.get(websocket)
-        if username:
-            del self.active_connections[username]
-            del self.connection_users[websocket]
-            if username in self.user_keys:
-                del self.user_keys[username]
-            logger.info(f"❌ User {username} disconnected")
-            asyncio.create_task(self.broadcast_user_list())
+    username = self.connection_users.get(websocket)
+    if username:
+        del self.active_connections[username]
+        del self.connection_users[websocket]
+
+        if username in self.user_public_keys:
+            del self.user_public_keys[username]
+
+        logger.info(f"❌ User {username} disconnected")
+        asyncio.create_task(self.broadcast_user_list())
 
     async def send_to_user(self, message: dict, username: str):
         if username in self.active_connections:
@@ -139,25 +141,24 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
             logger.info(f"📨 Received from {username}: {data.get('type')}")
             
             # Обрабатываем разные типы сообщений
-            if data["type"] == "key_exchange":
-                # Сохраняем ключ шифрования пользователя
-                manager.user_keys[username] = data.get("key")
-                logger.info(f"🔑 Key received from {username}")
-                
-                # Отправляем подтверждение
-                await manager.send_to_user({
-                    "type": "key_exchange_ack",
-                    "status": "success"
-                }, username)
-                
-                # Отправляем ключ всем остальным пользователям
-                for user in manager.active_connections:
-                    if user != username and user in manager.user_keys:
-                        await manager.send_to_user({
-                            "type": "key_exchange",
-                            "from": username,
-                            "key": data.get("key")
-                        }, user)
+            if data["type"] == "public_key":
+    public_key = data.get("public_key")
+
+    if not isinstance(public_key, dict):
+        logger.warning(f"⚠️ Invalid public key from {username}")
+        continue
+
+    manager.user_public_keys[username] = public_key
+
+    logger.info(f"🔑 Public key received from {username}")
+
+    for user in manager.active_connections:
+        if user != username:
+            await manager.send_to_user({
+                "type": "public_key",
+                "from": username,
+                "public_key": public_key
+            }, user)
             
             elif data["type"] == "encrypted":
                 # Пересылаем зашифрованное сообщение получателю
