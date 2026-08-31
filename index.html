@@ -1043,14 +1043,16 @@
         document.getElementById('serverInfo').innerHTML = `🖥️ Сервер: ${SERVER_URL}`;
 
         // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
-        let ws = null;
-        let myName = "";
-        let currentChat = null;
-        let myKey = null;
-        let peerKeys = {};
-        let onlineUsers = [];
-        let keyExchangeAttempts = 0;
-        const MAX_KEY_ATTEMPTS = 3;
+       let ws = null;
+let myName = "";
+let currentChat = null;
+
+let myKeyPair = null;
+let peerPublicKeys = {};
+
+let onlineUsers = [];
+let keyExchangeAttempts = 0;
+const MAX_KEY_ATTEMPTS = 3;
         
         let peerConnection = null;
         let localStream = null;
@@ -1106,55 +1108,72 @@
         }
 
         // ========== КЛЮЧИ ==========
-        function generateEncryptionKey() {
-            return CryptoJS.lib.WordArray.random(32).toString();
-        }
 
-        function broadcastMyKey() {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-            ws.send(JSON.stringify({ type: "key_exchange", key: myKey }));
-            return true;
-        }
+async function generateKeyPair() {
+    return await crypto.subtle.generateKey(
+        {
+            name: "ECDH",
+            namedCurve: "P-256"
+        },
+        true,
+        ["deriveKey"]
+    );
+}
 
-        function sendKeyToUser(username) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-            ws.send(JSON.stringify({ type: "key_exchange", to: username, key: myKey }));
-            return true;
-        }
+async function exportPublicKey(publicKey) {
+    return await crypto.subtle.exportKey("jwk", publicKey);
+}
 
-        function requestKeyFromUser(username) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-            ws.send(JSON.stringify({ type: "key_request", to: username }));
-            return true;
-        }
+async function importPublicKey(publicKeyJwk) {
+    return await crypto.subtle.importKey(
+        "jwk",
+        publicKeyJwk,
+        {
+            name: "ECDH",
+            namedCurve: "P-256"
+        },
+        true,
+        []
+    );
+}
 
-        function checkAllKeys() {
-            const otherUsers = onlineUsers.filter(u => u !== myName);
-            const missingKeys = otherUsers.filter(u => !peerKeys[u]);
-            if (missingKeys.length > 0) {
-                missingKeys.forEach(user => requestKeyFromUser(user));
-                return false;
-            }
-            return true;
-        }
+async function publishPublicKey() {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !myKeyPair) {
+        return false;
+    }
+
+    const publicKey = await exportPublicKey(myKeyPair.publicKey);
+
+    ws.send(JSON.stringify({
+        type: "public_key",
+        public_key: publicKey
+    }));
+
+    return true;
+}
 
         // ========== ПОДКЛЮЧЕНИЕ ==========
-        function connect() {
+async function connect() {
             myName = document.getElementById('username').value.trim();
             if (!myName) {
                 showNotification('Введите имя!', 'error');
                 return;
             }
 
-            myKey = generateEncryptionKey();
-            document.getElementById('connectionStatus').innerHTML = `<span class="online-dot"></span><span>Подключение...</span>`;
+myKeyPair = await generateKeyPair();
 
-            try {
-                ws = new WebSocket(`${SERVER_URL}/ws/${myName}`);
+document.getElementById('connectionStatus').innerHTML =
+    `<span class="online-dot"></span><span>Подключение...</span>`;
 
-                ws.onopen = () => {
-                    keyExchangeAttempts = 0;
-                    setTimeout(() => broadcastMyKey(), 500);
+try {
+    ws = new WebSocket(`${SERVER_URL}/ws/${myName}`);
+
+    ws.onopen = () => {
+        keyExchangeAttempts = 0;
+
+        setTimeout(() => {
+            publishPublicKey();
+        }, 500);
                     document.getElementById('authScreen').style.display = 'none';
                     document.getElementById('mainScreen').style.display = 'flex';
                     document.getElementById('userAvatar').textContent = myName.charAt(0).toUpperCase();
@@ -1171,15 +1190,21 @@
                         updateUserList(data.users);
                         setTimeout(() => checkAllKeys(), 500);
                     }
-                    else if (data.type === 'key_exchange') {
-                        peerKeys[data.from] = data.key;
-                        updateUserList(onlineUsers);
-                        if (!peerKeys[myName]) sendKeyToUser(data.from);
-                        checkAllKeys();
-                        if (currentChat === data.from) updateChatStatus();
-                    }
-                    else if (data.type === 'key_request') {
-                        sendKeyToUser(data.from);
+                   else if (data.type === 'public_key') {
+    try {
+        peerPublicKeys[data.from] =
+            await importPublicKey(data.public_key);
+
+        updateUserList(onlineUsers);
+
+        if (currentChat === data.from) {
+            updateChatStatus();
+        }
+    } catch (error) {
+        console.error('Ошибка импорта публичного ключа:', error);
+        showNotification('⚠️ Не удалось проверить ключ пользователя', 'warning');
+    }
+}
                     }
                     else if (data.type === 'encrypted') {
                         try {
@@ -1228,7 +1253,7 @@
                 ws.onclose = () => {
                     document.getElementById('connectionStatus').innerHTML = `<span style="color: #f87171;">●</span> Отключено`;
                     showNotification('❌ Соединение потеряно', 'error');
-                    peerKeys = {};
+peerPublicKeys = {};
                     setTimeout(() => { if (myName) connect(); }, 3000);
                 };
 
