@@ -1972,11 +1972,43 @@ document.addEventListener("keydown", event => {
 
 (function boot() {
   const savedTheme = localStorage.getItem("limongram-theme");
-  if (savedTheme === "dark" || (!savedTheme && matchMedia("(prefers-color-scheme: dark)").matches)) {
+
+  if (
+    savedTheme === "dark" ||
+    (!savedTheme && matchMedia("(prefers-color-scheme: dark)").matches)
+  ) {
     document.body.classList.add("dark");
   }
+
+  registerPushServiceWorker();
+
   $("username").focus();
 })();
+  /* ---------- Push notifications ---------- */
+
+let pushRegistration = null;
+
+async function registerPushServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    console.warn("Service Worker не поддерживается");
+    return null;
+  }
+
+  try {
+    pushRegistration = await navigator.serviceWorker.register("/sw.js", {
+      scope: "/"
+    });
+
+    console.log("🍋 Push Service Worker зарегистрирован");
+
+    await navigator.serviceWorker.ready;
+
+    return pushRegistration;
+  } catch (error) {
+    console.error("Не удалось зарегистрировать Service Worker:", error);
+    return null;
+  }
+}
 </script>
 </body>
 </html>
